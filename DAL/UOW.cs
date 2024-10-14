@@ -4,7 +4,7 @@ using MongoDB.Driver;
 
 namespace DAL;
 
-public class UOW : Base_UOW<IMongoDatabase>
+public class UOW : BaseUOW<IMongoDatabase>
 {
     public UOW(IMongoDatabase db) : base(db)
     {
@@ -19,6 +19,8 @@ public class UOW : Base_UOW<IMongoDatabase>
     private PasswordRepository? _passwordRepository;
     public PasswordRepository PasswordRepository => _passwordRepository ?? new PasswordRepository(_db, "Password");
 
-    private UserRepository? _userRepository;
-    public UserRepository UserRepository => _userRepository ?? new UserRepository(_db, "User");
+    private RefreshTokenRepository? _refreshTokenRepository;
+
+    public RefreshTokenRepository RefreshTokenRepository =>
+        _refreshTokenRepository ?? new RefreshTokenRepository(_db, "RefreshToken");
 }

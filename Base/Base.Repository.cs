@@ -3,12 +3,12 @@ using MongoDB.Driver;
 
 namespace Base;
 
-public class Base_Repository<T>
-    where T : Base_Entity
+public class BaseRepository<T>
+    where T : BaseEntity
 {
     protected readonly IMongoCollection<T> _collection;
 
-    public Base_Repository(IMongoDatabase database, string collectionName)
+    public BaseRepository(IMongoDatabase database, string collectionName)
     {
         _collection = database.GetCollection<T>(collectionName);
     }
@@ -25,6 +25,7 @@ public class Base_Repository<T>
 
     public async Task AddAsync(T entity)
     {
+        entity.CreationDate = DateTime.UtcNow;
         await _collection.InsertOneAsync(entity);
     }
 

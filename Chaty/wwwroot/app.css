@@ -49,3 +49,9 @@ h1:focus {
 .darker-border-checkbox.form-check-input {
     border-color: #929292;
 }
+
+.registerContainer {
+    display: grid;
+    grid-template-columns: max-content max-content;
+    grid-gap: 2rem;
+}

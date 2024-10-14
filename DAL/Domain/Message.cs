@@ -3,7 +3,7 @@ using MongoDB.Bson.Serialization.Attributes;
 
 namespace DAL.Domain;
 
-public class Message : Base_Entity
+public class Message : BaseEntity
 {
     private User? _user;
     private string? _userId;

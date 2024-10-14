@@ -2,7 +2,7 @@
 
 namespace DAL.Domain;
 
-public class Chat : Base_Entity
+public class Chat : BaseEntity
 {
     public List<string>? UsersIds = new List<string>();
     public List<User>? Users = new List<User>();

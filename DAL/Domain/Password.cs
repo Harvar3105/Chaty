@@ -4,7 +4,7 @@ using Base.Domain;
 
 namespace DAL.Domain;
 
-public class Password : Base_Entity
+public class Password : BaseEntity
 {
     private User? _user;
     private string _userId;
@@ -35,7 +35,7 @@ public class Password : Base_Entity
         get => _userId;
         set
         {
-            if (string.IsNullOrEmpty(_userId)) _userId = value;
+            if (string.IsNullOrWhiteSpace(_userId)) _userId = value;
         }
     }
 

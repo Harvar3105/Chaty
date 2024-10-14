@@ -1,7 +1,12 @@
 ﻿using System.Net;
-using Chaty.API.Info;
+using System.Security.Claims;
+using Chaty.Helpers;
+using Chaty.Helpers.Models;
+using Chaty.Helpers.Services;
+using Chaty.Models;
 using DAL;
 using DAL.Domain;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Chaty.API;
@@ -11,30 +16,217 @@ namespace Chaty.API;
 public class UserController : Controller
 {
     private readonly UOW _uow;
+    private readonly IConfiguration _configuration;
+    private readonly UserManager<User> _userManager;
+    private readonly SignInManager<User> _signInManager;
+    private readonly ILogger<UserController> _logger;
 
-    public UserController(UOW uow)
+    public UserController(UOW uow, IConfiguration configuration, UserManager<User> userManager, ILogger<UserController> logger, SignInManager<User> signInManager)
     {
         _uow = uow;
-    }
-
-    [HttpGet]
-    [ProducesResponseType<IEnumerable<User>>((int) HttpStatusCode.OK)]
-    [Produces("application/json")]
-    [Consumes("application/json")]
-    public async Task<IEnumerable<User>> GetAllUser()
-    {
-        return await _uow.UserRepository.GetAllAsync();
+        _configuration = configuration;
+        _userManager = userManager;
+        _logger = logger;
+        _signInManager = signInManager;
     }
 
     [HttpPost]
     [Produces("application/json")]
     [Consumes("application/json")]
-    public async Task<ActionResult<User>> Register(
-        [FromBody] RegisterInfo info
+    [ProducesResponseType<JWT>((int) HttpStatusCode.OK)]
+    [ProducesResponseType<RestApiErrorResponse>((int) HttpStatusCode.BadRequest)]
+    public async Task<ActionResult<JWT>> Register(
+        [FromBody] RegisterModel model,
+        [FromQuery] int expiresInSeconds
     )
     {
-        var user = new User(info.Username, info.FirstName, info.LastName, info.Email, info.Age);
-        await _uow.UserRepository.AddAsync(user);
-        return CreatedAtAction("Register", new { id = user.Id.ToString() }, user);
+        if (expiresInSeconds <= 0) expiresInSeconds = int.MaxValue;
+        expiresInSeconds = expiresInSeconds < _configuration.GetValue<int>("JWT:expiresInSeconds")
+            ? expiresInSeconds
+            : _configuration.GetValue<int>("JWT:expiresInSeconds");
+        
+        var user = await _userManager.FindByEmailAsync(model.Email);
+        if (user != null)
+        {
+            _logger.LogWarning("User with email {} is already registered", model.Email);
+            return BadRequest(
+                new RestApiErrorResponse()
+                {
+                    Status = HttpStatusCode.BadRequest,
+                    Error = $"User with email {model.Email} is already registered"
+                }
+            );
+        }
+        
+        user = new User(model.Username, model.FirstName, model.LastName, model.Email, model.Age);
+
+        // try
+        // {
+        //     ValidateUser(user, await _uow.UserRepository.GetAllAsync());
+        // }
+        // catch (Exception e)
+        // {
+        //     return BadRequest(new { Message = e.Message });
+        // }
+
+        var refreshToken = new RefreshToken
+        {
+            User = user
+        };
+        user.RefreshTokens.Add(refreshToken);
+        
+        if (string.IsNullOrWhiteSpace(user.Id))
+        {
+           return BadRequest(
+                new RestApiErrorResponse()
+                {
+                    Status = HttpStatusCode.BadRequest,
+                    Error = "User add does not succeeded!"
+                }
+            );
+        }
+
+        refreshToken.UserId = user.Id;
+        
+        var pswrd = new Password(user, user.Id, model.Password);
+        await _uow.PasswordRepository.AddAsync(pswrd);
+
+        var result = await _userManager.CreateAsync(user, model.Password);
+        if (!result.Succeeded)
+        {
+            return BadRequest(
+                new RestApiErrorResponse()
+                {
+                    Status = HttpStatusCode.BadRequest,
+                    Error = result.Errors.First().Description
+                }
+            );
+        }
+        
+        result = await _userManager.AddClaimsAsync(user, new List<Claim>()
+        {
+            new (ClaimTypes.Name, user.Username)
+        });
+        if (!result.Succeeded)
+        {
+            return BadRequest(
+                new RestApiErrorResponse()
+                {
+                    Status = HttpStatusCode.BadRequest,
+                    Error = result.Errors.First().Description
+                }
+            );
+        }
+
+        user = await _userManager.FindByEmailAsync(user.Email);
+        if (user == null)
+        {
+            _logger.LogWarning("User with email {} is not found after registration", model.Email);
+            return BadRequest(
+                new RestApiErrorResponse()
+                {
+                    Status = HttpStatusCode.BadRequest,
+                    Error = $"User with email {model.Email} is not found after registration"
+                }
+            );
+        }
+        var claimsPrincipal = await _signInManager.CreateUserPrincipalAsync(user);
+        var jwt = JWTHelper.GenerateJwt(
+            claimsPrincipal.Claims,
+            _configuration.GetValue<string>("JWT:key")!,
+            _configuration.GetValue<string>("JWT:issuer")!,
+            _configuration.GetValue<string>("JWT:audience")!,
+            expiresInSeconds
+        );
+        var res = new JWT()
+        {
+            Jwt = jwt,
+            RefreshToken = refreshToken.RefreshToken,
+        };
+        await _uow.RefreshTokenRepository.AddAsync(refreshToken);
+        return Ok(res);
+    }
+
+    [HttpPost]
+    [Produces("application/json")]
+    [Consumes("application/json")]
+    [ProducesResponseType<JWT>((int) HttpStatusCode.OK)]
+    [ProducesResponseType<RestApiErrorResponse>((int) HttpStatusCode.BadRequest)]
+    public async Task<ActionResult<JWT>> Login(
+        [FromBody] LoginModel model,
+        [FromQuery] int expiresInSeconds = Int32.MaxValue
+        )
+    {
+        if (expiresInSeconds <= 0) expiresInSeconds = int.MaxValue;
+        expiresInSeconds = expiresInSeconds < _configuration.GetValue<int>("JWT:expiresInSeconds")
+            ? expiresInSeconds
+            : _configuration.GetValue<int>("JWT:expiresInSeconds");
+        
+        // verify user
+        User user = await _userManager.FindByEmailAsync(model.Email);
+        if (user == null)
+        {
+            _logger.LogWarning("WebApi login failed, email {} not found", model.Email);
+            return NotFound("User/Password problem");
+        }
+        
+        // verify password
+        var result = await _signInManager.CheckPasswordSignInAsync(user, model.Password, false);
+        if (!result.Succeeded)
+        {
+            _logger.LogWarning("WebApi login failed, password {} for email {} was wrong", model.Password,
+                model.Email);
+            return NotFound("User/Password problem");
+        }
+        
+        var claimsPrincipal = await _signInManager.CreateUserPrincipalAsync(user);
+        if (claimsPrincipal == null)
+        {
+            _logger.LogWarning("WebApi login failed, claimsPrincipal null");
+            return NotFound("User/Password problem");
+        }
+
+        var tokens = await _uow.RefreshTokenRepository.GetUsersRefreshTokens(user.Id!);
+        var tokensToDelete = tokens
+            .Where(t => t.ExpirationDateTime < DateTime.UtcNow)
+            .Select(t => t.Id).ToList();
+        if (tokensToDelete.Any()) await _uow.RefreshTokenRepository.DeleteMany(tokensToDelete!);
+        _logger.LogInformation("Deleted {} refresh tokens", tokensToDelete.Count);
+        
+        var refreshToken = new RefreshToken()
+        {
+            UserId = user.Id!
+        };
+        await _uow.RefreshTokenRepository.AddAsync(refreshToken);
+        
+
+        var jwt = JWTHelper.GenerateJwt(
+            claimsPrincipal.Claims,
+            _configuration.GetValue<string>("JWT:key")!,
+            _configuration.GetValue<string>("JWT:issuer")!,
+            _configuration.GetValue<string>("JWT:audience")!,
+            expiresInSeconds
+        );
+
+        var responseData = new JWT()
+        {
+            UserId = user.Id!,
+            Jwt = jwt,
+            RefreshToken = refreshToken.RefreshToken
+        };
+
+        return Ok(responseData);
+    }
+
+    
+
+    private void ValidateUser(User user, IEnumerable<User> users)
+    {
+        
+        foreach (User data in users)
+        {
+            if (data.Username.Equals(user.Username)) throw new Exception("ERROR: 1. User with such username already exists! " + user.Username);
+            if (data.Email!.Equals(user.Email)) throw new Exception("ERROR: 2. Email is already in use!");
+        }
     }
 }

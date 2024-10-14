@@ -1,6 +1,13 @@
+using System.IdentityModel.Tokens.Jwt;
+using System.Text;
 using Chaty.Components;
+using Chaty.Helpers.Services;
 using DAL;
+using DAL.Domain;
+using Microsoft.AspNetCore.Components.Authorization;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Options;
+using Microsoft.IdentityModel.Tokens;
 using MongoDB.Driver;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -8,10 +15,15 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
 
+builder.Services.AddControllers();
+
+builder.Services.AddHttpClient<HttpService>(client =>
+{
+    client.BaseAddress = new Uri(builder.Configuration.GetSection("ServerURI").Value!);
+});
+
 builder.Services.Configure<MongoDbSettings>(
     builder.Configuration.GetSection("MongoDbSettings"));
-
-builder.Services.AddControllers();
 
 builder.Services.AddSingleton<IMongoClient, MongoClient>(sp =>
 {
@@ -26,7 +38,35 @@ builder.Services.AddScoped<IMongoDatabase>(sp =>
     return client.GetDatabase(settings.DatabaseName);
 });
 
+builder.Services.AddScoped<AuthenticationStateProvider, TokenAuthStateProvider>();
+
 builder.Services.AddScoped<UOW>();
+
+builder.Services
+    .AddIdentity<User, Role>(options => options.SignIn.RequireConfirmedAccount = false)
+    ;
+
+JwtSecurityTokenHandler.DefaultInboundClaimFilter.Clear();
+builder.Services
+    .AddAuthentication()
+    .AddCookie(options => options.SlidingExpiration = true)
+    .AddJwtBearer(options =>
+    {
+        options.RequireHttpsMetadata = false;
+        options.SaveToken = false;
+        options.TokenValidationParameters = new TokenValidationParameters()
+        {
+            ValidIssuer = builder.Configuration.GetValue<string>("JWT:issuer"),
+            ValidAudience = builder.Configuration.GetValue<string>("JWT:audience"),
+            IssuerSigningKey =
+                new SymmetricSecurityKey(
+                    Encoding.UTF8.GetBytes(
+                        builder.Configuration.GetValue<string>("JWT:key")!
+                    )
+                ),
+            ClockSkew = TimeSpan.Zero,
+        };
+    });
 
 builder.Services.AddCors(options =>
 {
@@ -55,8 +95,12 @@ app.MapControllers();
 
 app.UseHttpsRedirection();
 
+app.UseAuthorization();
+
 app.UseStaticFiles();
 app.UseAntiforgery();
+app.UseCors("CorsAllowAll");
+
 
 app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode();

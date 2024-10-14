@@ -1,12 +1,16 @@
-﻿using MongoDB.Bson;
+﻿using System.ComponentModel.DataAnnotations;
+using Base.Interfaces;
+using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
 using MongoDB.Bson.Serialization.IdGenerators;
 
 namespace Base.Domain;
 
-public abstract class Base_Entity
+public abstract class BaseEntity : IEntity
 {
-    [BsonId(IdGenerator = typeof(AscendingGuidGenerator))]
-    [BsonRepresentation(BsonType.String)]
-    public Guid Id { get; set; }
+    [Key]
+    [BsonId]
+    [BsonRepresentation(BsonType.ObjectId)]
+    public string? Id { get; set; }
+    public DateTime? CreationDate { get; set; }
 }

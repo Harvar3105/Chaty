@@ -1,15 +1,20 @@
 ﻿using System.Net.Mail;
 using Base.Domain;
+using Base.Interfaces;
+using Microsoft.AspNetCore.Identity;
 
 namespace DAL.Domain;
 
-public class User : Base_Entity
+public class User : IdentityUser<string>, IEntity 
 {
     public string Username { get; set; }
     private string? _firstName;
     private string? _lastName;
     private int _age;
-    private MailAddress? _email;
+    private MailAddress _email;
+    public ICollection<RefreshToken> RefreshTokens;
+    
+    public User(){}
     
     public User(string username, string? firstName, string? lastName, string? email, int? age)
     {
@@ -54,9 +59,9 @@ public class User : Base_Entity
         }
     }
 
-    public string? Email
+    public string Email
     {
-        get => _email?.Address;
+        get => _email.Address;
         set
         {
             if (string.IsNullOrWhiteSpace(value)) return;

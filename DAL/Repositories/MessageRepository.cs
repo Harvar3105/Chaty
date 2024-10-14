@@ -4,7 +4,7 @@ using MongoDB.Driver;
 
 namespace DAL.Repositories;
 
-public class MessageRepository : Base_Repository<Message>
+public class MessageRepository : BaseRepository<Message>
 {
     public MessageRepository(IMongoDatabase database, string collectionName) : base(database, collectionName)
     {
