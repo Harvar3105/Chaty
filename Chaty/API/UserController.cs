@@ -20,14 +20,16 @@ public class UserController : Controller
     private readonly UserManager<User> _userManager;
     private readonly SignInManager<User> _signInManager;
     private readonly ILogger<UserController> _logger;
+    private readonly RefreshTokenFactory _refreshTokenFactory;
 
-    public UserController(Uow uow, IConfiguration configuration, UserManager<User> userManager, ILogger<UserController> logger, SignInManager<User> signInManager)
+    public UserController(Uow uow, IConfiguration configuration, UserManager<User> userManager, ILogger<UserController> logger, SignInManager<User> signInManager, RefreshTokenFactory refreshTokenFactory)
     {
         _uow = uow;
         _configuration = configuration;
         _userManager = userManager;
         _logger = logger;
         _signInManager = signInManager;
+        _refreshTokenFactory = refreshTokenFactory;
     }
 
     [HttpPost]
@@ -66,10 +68,7 @@ public class UserController : Controller
             email: model.Email,
             age: model.Age);
         
-        var refreshToken = new RefreshToken
-        {
-            UserId = user.Id
-        };
+        var refreshToken = _refreshTokenFactory.Generate(user.Id);
         await _uow.RefreshTokenRepository.AddAsync(refreshToken);
         user.RefreshTokens.Add(refreshToken);
         
@@ -191,10 +190,7 @@ public class UserController : Controller
         if (tokensToDelete.Any()) await _uow.RefreshTokenRepository.DeleteMany(tokensToDelete!);
         _logger.LogInformation("Deleted {} refresh tokens", tokensToDelete.Count);
         
-        var refreshToken = new RefreshToken()
-        {
-            UserId = user.Id!
-        };
+        var refreshToken = _refreshTokenFactory.Generate(user.Id);
         await _uow.RefreshTokenRepository.AddAsync(refreshToken);
         
 

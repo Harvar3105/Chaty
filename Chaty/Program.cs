@@ -32,6 +32,15 @@ builder.Services.AddHttpClient<HttpService>(client =>
     client.BaseAddress = new Uri(builder.Configuration.GetSection("ServerURI").Value!);
 });
 
+builder.Services.Configure<RefreshTokenSettings>(
+    builder.Configuration.GetSection("RefreshToken"));
+
+builder.Services.AddSingleton<RefreshTokenFactory>(sp =>
+{
+    var settings = sp.GetRequiredService<IOptions<RefreshTokenSettings>>();
+    return new RefreshTokenFactory(settings);
+});
+
 builder.Services.Configure<MongoDbSettings>(
     builder.Configuration.GetSection("MongoDbSettings"));
 
