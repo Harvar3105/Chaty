@@ -1,12 +1,13 @@
 ﻿using Base;
 using DAL.Domain;
 using MongoDB.Driver;
+using MongoDbGenericRepository;
 
 namespace DAL.Repositories;
 
 public class RefreshTokenRepository : BaseRepository<RefreshToken>
 {
-    public RefreshTokenRepository(IMongoDatabase database, string collectionName) : base(database, collectionName)
+    public RefreshTokenRepository(IMongoDbContext database, string collectionName) : base(database, collectionName)
     {
     }
 

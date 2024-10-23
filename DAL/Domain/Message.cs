@@ -1,4 +1,4 @@
-﻿using Base.Domain;
+﻿using Base;
 using MongoDB.Bson.Serialization.Attributes;
 
 namespace DAL.Domain;

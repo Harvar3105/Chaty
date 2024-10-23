@@ -12,8 +12,10 @@
     </ItemGroup>
 
     <ItemGroup>
+      <PackageReference Include="AspNet.Identity.MongoDB" Version="2.0.8" />
+      <PackageReference Include="AspNetCore.Identity.MongoDbCore" Version="3.1.2" />
+      <PackageReference Include="Microsoft.AspNet.Identity.Core" Version="2.2.4" />
       <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="8.0.10" />
-      <PackageReference Include="Microsoft.AspNetCore.Identity.UI" Version="8.0.10" />
       <PackageReference Include="Microsoft.IdentityModel" Version="7.0.0" />
       <PackageReference Include="Microsoft.IdentityModel.Tokens" Version="8.1.2" />
       <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="8.1.2" />

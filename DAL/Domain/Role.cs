@@ -1,7 +1,11 @@
-﻿using Microsoft.AspNetCore.Identity;
+﻿using AspNetCore.Identity.MongoDbCore.Models;
+using Microsoft.AspNetCore.Identity;
+using MongoDbGenericRepository.Attributes;
+
 namespace DAL.Domain;
 
-public class Role : IdentityRole<string>
+[CollectionName("Roles")]
+public class Role : MongoIdentityRole<string>
 {
     
 }

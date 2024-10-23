@@ -1,12 +1,9 @@
-﻿namespace Base;
+﻿using MongoDbGenericRepository;
 
-public abstract class BaseUOW <DataBase>
-    where DataBase : class
+namespace Base;
+
+public abstract class BaseUow<TContext>(IMongoDbContext ctx)
+    where TContext : class
 {
-    protected readonly DataBase _db;
-
-    protected BaseUOW(DataBase db)
-    {
-        _db = db;
-    }
+    protected readonly IMongoDbContext Ctx = ctx;
 }

@@ -1,26 +1,20 @@
 ﻿using Base;
 using DAL.Repositories;
-using MongoDB.Driver;
+using MongoDbGenericRepository;
 
 namespace DAL;
 
-public class UOW : BaseUOW<IMongoDatabase>
+public class Uow(IMongoDbContext ctx) : BaseUow<IMongoDbContext>(ctx)
 {
-    public UOW(IMongoDatabase db) : base(db)
-    {
-    }
-
     private ChatRepository? _chatRepository;
-    public ChatRepository ChatRepository => _chatRepository ?? new ChatRepository(_db, "Chat");
+    public ChatRepository ChatRepository => _chatRepository ?? new ChatRepository(Ctx, "Chat");
 
     private MessageRepository? _messageRepository;
-    public MessageRepository MessageRepository => _messageRepository ?? new MessageRepository(_db, "Message");
-
-    private PasswordRepository? _passwordRepository;
-    public PasswordRepository PasswordRepository => _passwordRepository ?? new PasswordRepository(_db, "Password");
+    public MessageRepository MessageRepository => _messageRepository ?? new MessageRepository(Ctx, "Message");
+    
 
     private RefreshTokenRepository? _refreshTokenRepository;
 
     public RefreshTokenRepository RefreshTokenRepository =>
-        _refreshTokenRepository ?? new RefreshTokenRepository(_db, "RefreshToken");
+        _refreshTokenRepository ?? new RefreshTokenRepository(Ctx, "RefreshToken");
 }

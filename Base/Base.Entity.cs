@@ -2,9 +2,8 @@
 using Base.Interfaces;
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
-using MongoDB.Bson.Serialization.IdGenerators;
 
-namespace Base.Domain;
+namespace Base;
 
 public abstract class BaseEntity : IEntity
 {

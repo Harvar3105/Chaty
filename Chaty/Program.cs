@@ -1,5 +1,6 @@
 using System.IdentityModel.Tokens.Jwt;
 using System.Text;
+using AspNetCore.Identity.MongoDbCore;
 using Chaty.Components;
 using Chaty.Helpers.Services;
 using DAL;
@@ -9,8 +10,17 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using MongoDB.Driver;
+using MongoDbGenericRepository;
+using MongoDbContext = DAL.MongoDbContext;
 
 var builder = WebApplication.CreateBuilder(args);
+
+builder.Services.AddLogging(loggingBuilder =>
+{
+    loggingBuilder.ClearProviders();
+    loggingBuilder.AddConsole();
+    loggingBuilder.AddDebug();
+});
 
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
@@ -38,13 +48,29 @@ builder.Services.AddScoped<IMongoDatabase>(sp =>
     return client.GetDatabase(settings.DatabaseName);
 });
 
+builder.Services.AddScoped<IMongoDbContext, MongoDbContext>();
+
 builder.Services.AddScoped<AuthenticationStateProvider, TokenAuthStateProvider>();
 
-builder.Services.AddScoped<UOW>();
+builder.Services.AddScoped<Uow>();
 
 builder.Services
-    .AddIdentity<User, Role>(options => options.SignIn.RequireConfirmedAccount = false)
-    ;
+    .AddIdentity<User, Role>(options =>
+    {
+        options.SignIn.RequireConfirmedAccount = false;
+        options.Password.RequireDigit = true;
+        options.Password.RequireNonAlphanumeric = false;
+        options.Password.RequiredLength = 4;
+        options.Password.RequireLowercase = false;
+        options.Password.RequireUppercase = false;
+        options.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(5);
+        options.Lockout.MaxFailedAccessAttempts = 5;
+    })
+    // .AddRoles<Role>()
+    .AddUserStore<MongoUserStore<User>>()
+    .AddRoleStore<MongoRoleStore<Role>>()
+    .AddSignInManager<SignInManager<User>>()
+    .AddDefaultTokenProviders();     
 
 JwtSecurityTokenHandler.DefaultInboundClaimFilter.Clear();
 builder.Services
@@ -90,6 +116,12 @@ if (!app.Environment.IsDevelopment())
     // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
     app.UseHsts();
 }
+
+app.Use(async (ctx, next) =>
+{
+    var logger = ctx.RequestServices.GetRequiredService<ILogger<Program>>();
+    await next.Invoke();
+});
 
 app.MapControllers();
 

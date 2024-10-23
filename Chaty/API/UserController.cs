@@ -15,13 +15,13 @@ namespace Chaty.API;
 [Route("api/[controller]/[action]")]
 public class UserController : Controller
 {
-    private readonly UOW _uow;
+    private readonly Uow _uow;
     private readonly IConfiguration _configuration;
     private readonly UserManager<User> _userManager;
     private readonly SignInManager<User> _signInManager;
     private readonly ILogger<UserController> _logger;
 
-    public UserController(UOW uow, IConfiguration configuration, UserManager<User> userManager, ILogger<UserController> logger, SignInManager<User> signInManager)
+    public UserController(Uow uow, IConfiguration configuration, UserManager<User> userManager, ILogger<UserController> logger, SignInManager<User> signInManager)
     {
         _uow = uow;
         _configuration = configuration;
@@ -45,6 +45,8 @@ public class UserController : Controller
             ? expiresInSeconds
             : _configuration.GetValue<int>("JWT:expiresInSeconds");
         
+        _logger.LogWarning("RegisterModel: " + model);
+        
         var user = await _userManager.FindByEmailAsync(model.Email);
         if (user != null)
         {
@@ -58,22 +60,19 @@ public class UserController : Controller
             );
         }
         
-        user = new User(model.Username, model.FirstName, model.LastName, model.Email, model.Age);
-
-        // try
-        // {
-        //     ValidateUser(user, await _uow.UserRepository.GetAllAsync());
-        // }
-        // catch (Exception e)
-        // {
-        //     return BadRequest(new { Message = e.Message });
-        // }
-
+        user = new User(username: model.Username,
+            firstName: model.FirstName,
+            lastName: model.LastName,
+            email: model.Email,
+            age: model.Age);
+        
         var refreshToken = new RefreshToken
         {
-            User = user
+            UserId = user.Id
         };
+        await _uow.RefreshTokenRepository.AddAsync(refreshToken);
         user.RefreshTokens.Add(refreshToken);
+        
         
         if (string.IsNullOrWhiteSpace(user.Id))
         {
@@ -85,15 +84,14 @@ public class UserController : Controller
                 }
             );
         }
-
-        refreshToken.UserId = user.Id;
         
-        var pswrd = new Password(user, user.Id, model.Password);
-        await _uow.PasswordRepository.AddAsync(pswrd);
-
+        refreshToken.UserId = user.Id;
+        _logger.LogCritical("User: " + user);
+        
         var result = await _userManager.CreateAsync(user, model.Password);
         if (!result.Succeeded)
         {
+            _logger.LogCritical("Failed to create new user!");
             return BadRequest(
                 new RestApiErrorResponse()
                 {
@@ -105,10 +103,11 @@ public class UserController : Controller
         
         result = await _userManager.AddClaimsAsync(user, new List<Claim>()
         {
-            new (ClaimTypes.Name, user.Username)
+            new (ClaimTypes.Name, user.UserName)
         });
         if (!result.Succeeded)
         {
+            _logger.LogCritical("Failed to register user claims!");
             return BadRequest(
                 new RestApiErrorResponse()
                 {
@@ -143,7 +142,6 @@ public class UserController : Controller
             Jwt = jwt,
             RefreshToken = refreshToken.RefreshToken,
         };
-        await _uow.RefreshTokenRepository.AddAsync(refreshToken);
         return Ok(res);
     }
 
@@ -225,7 +223,7 @@ public class UserController : Controller
         
         foreach (User data in users)
         {
-            if (data.Username.Equals(user.Username)) throw new Exception("ERROR: 1. User with such username already exists! " + user.Username);
+            if (data.UserName.Equals(user.UserName)) throw new Exception("ERROR: 1. User with such username already exists! " + user.UserName);
             if (data.Email!.Equals(user.Email)) throw new Exception("ERROR: 2. Email is already in use!");
         }
     }

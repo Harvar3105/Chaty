@@ -21,4 +21,9 @@ public class RegisterModel
     [Required(ErrorMessage = "Password is required")]
     [Length(8, 30, ErrorMessage = "Password length must be between 8 and 30 characters")]
     public string Password { get; set; }
+
+    public override string ToString()
+    {
+        return $"{Username} {Email} {FirstName} {LastName} {Age} {Password}";
+    }
 }

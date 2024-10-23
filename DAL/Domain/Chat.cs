@@ -1,4 +1,4 @@
-﻿using Base.Domain;
+﻿using Base;
 
 namespace DAL.Domain;
 

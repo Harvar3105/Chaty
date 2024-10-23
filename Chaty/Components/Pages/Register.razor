@@ -80,7 +80,6 @@
         catch (Exception e)
         {
             Console.WriteLine(e);
-            // _errMessage = e.Message;
             Match match = Regex.Match(e.Message, @"ERROR:\s*(\d+)");
             if (match.Success)
             {
@@ -94,6 +93,7 @@
             else
             {
                 Console.WriteLine("Unknown error! " + e.Message);
+                _errMessage = e.Message;
             }
         }
     }

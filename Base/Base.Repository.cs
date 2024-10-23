@@ -1,5 +1,5 @@
-﻿using Base.Domain;
-using MongoDB.Driver;
+﻿using MongoDB.Driver;
+using MongoDbGenericRepository;
 
 namespace Base;
 
@@ -8,9 +8,9 @@ public class BaseRepository<T>
 {
     protected readonly IMongoCollection<T> _collection;
 
-    public BaseRepository(IMongoDatabase database, string collectionName)
+    protected BaseRepository(IMongoDbContext ctx, string collectionName)
     {
-        _collection = database.GetCollection<T>(collectionName);
+        _collection = ctx.GetCollection<T>(collectionName);
     }
 
     public async Task<List<T>> GetAllAsync()
