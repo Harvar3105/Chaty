@@ -4,6 +4,7 @@ using MongoDbGenericRepository;
 
 namespace DAL;
 
+//TODO: is it really disposable?
 public class Uow : BaseUow<IMongoDbContext>, IDisposable
 {
     private readonly Lazy<ChatRepository> _chatRepository;

@@ -3,7 +3,7 @@ using System.Security.Claims;
 using System.Text;
 using Microsoft.IdentityModel.Tokens;
 
-namespace Chaty.Helpers;
+namespace Helpers;
 
 public static class JWTHelper
 {

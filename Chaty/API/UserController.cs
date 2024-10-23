@@ -1,13 +1,13 @@
 ﻿using System.Net;
 using System.Security.Claims;
-using Chaty.Helpers;
-using Chaty.Helpers.Models;
-using Chaty.Helpers.Services;
+using System.Security.Principal;
 using Chaty.Models;
 using DAL;
 using DAL.Domain;
+using Helpers;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using MongoDB.Driver;
 
 namespace Chaty.API;
 
@@ -158,41 +158,59 @@ public class UserController : Controller
         expiresInSeconds = expiresInSeconds < _configuration.GetValue<int>("JWT:expiresInSeconds")
             ? expiresInSeconds
             : _configuration.GetValue<int>("JWT:expiresInSeconds");
+
+        User? user;
+        if (model.isEmail) user = await _userManager.FindByEmailAsync(model.Login);
+        else user = await _userManager.FindByNameAsync(model.Login);
         
-        // verify user
-        User user = await _userManager.FindByEmailAsync(model.Email);
         if (user == null)
         {
-            _logger.LogWarning("WebApi login failed, email {} not found", model.Email);
-            return NotFound("User/Password problem");
+            _logger.LogWarning("WebApi login failed, Login {} not found", model.Login);
+            return NotFound($"WebApi login failed, Login {model.Login} not found");
         }
         
-        // verify password
-        var result = await _signInManager.CheckPasswordSignInAsync(user, model.Password, false);
+        var result = await _signInManager.CheckPasswordSignInAsync(user, model.Password, true);
         if (!result.Succeeded)
         {
             _logger.LogWarning("WebApi login failed, password {} for email {} was wrong", model.Password,
-                model.Email);
-            return NotFound("User/Password problem");
+                model.Login);
+            return NotFound($"WebApi login failed, password {model.Password} mismatched");
         }
         
-        var claimsPrincipal = await _signInManager.CreateUserPrincipalAsync(user);
+        var claimsPrincipal = await _signInManager.CreateUserPrincipalAsync(user!);
         if (claimsPrincipal == null)
         {
             _logger.LogWarning("WebApi login failed, claimsPrincipal null");
-            return NotFound("User/Password problem");
+            return NotFound("WebApi login failed, claimsPrincipal null");
         }
 
         var tokens = await _uow.RefreshTokenRepository.GetUsersRefreshTokens(user.Id!);
         var tokensToDelete = tokens
-            .Where(t => t.ExpirationDateTime < DateTime.UtcNow)
-            .Select(t => t.Id).ToList();
-        if (tokensToDelete.Any()) await _uow.RefreshTokenRepository.DeleteMany(tokensToDelete!);
-        _logger.LogInformation("Deleted {} refresh tokens", tokensToDelete.Count);
+            .Where(t => t != null && t.ExpirationDateTime < DateTime.UtcNow)
+            .Select(t => t?.Id).ToList();
         
-        var refreshToken = _refreshTokenFactory.Generate(user.Id);
-        await _uow.RefreshTokenRepository.AddAsync(refreshToken);
-        
+        if (tokensToDelete.Any())
+        {
+            await _uow.RefreshTokenRepository.DeleteMany(tokensToDelete);
+            _logger.LogInformation($"Deleted {tokensToDelete.Count} refresh tokens");
+        }
+
+        RefreshToken refreshToken;
+        if (tokens.Count == 0 || tokensToDelete.Count == tokens.Count)
+        {
+            refreshToken = _refreshTokenFactory.Generate(user.Id);
+            await _uow.RefreshTokenRepository.AddAsync(refreshToken);
+        }
+        else
+        {
+            refreshToken = tokens.OrderByDescending(t => t.ExpirationDateTime).FirstOrDefault();
+        }
+
+        if (refreshToken == null)
+        {
+            _logger.LogError("No valid refresh token found.");
+            return BadRequest("No valid refresh token found.");
+        }
 
         var jwt = JWTHelper.GenerateJwt(
             claimsPrincipal.Claims,
@@ -210,17 +228,5 @@ public class UserController : Controller
         };
 
         return Ok(responseData);
-    }
-
-    
-
-    private void ValidateUser(User user, IEnumerable<User> users)
-    {
-        
-        foreach (User data in users)
-        {
-            if (data.UserName.Equals(user.UserName)) throw new Exception("ERROR: 1. User with such username already exists! " + user.UserName);
-            if (data.Email!.Equals(user.Email)) throw new Exception("ERROR: 2. Email is already in use!");
-        }
     }
 }

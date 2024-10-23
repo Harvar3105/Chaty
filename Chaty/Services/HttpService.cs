@@ -1,11 +1,7 @@
 ﻿using Chaty.Models;
 using DAL.Domain;
 
-namespace Chaty.Helpers.Services;
-
-using System.Net.Http;
-using System.Net.Http.Json;
-using System.Threading.Tasks;
+namespace Chaty.Services;
 
 public class HttpService
 {
@@ -28,6 +24,19 @@ public class HttpService
             throw new Exception(await response.Content.ReadAsStringAsync());
         }
 
+        return await response.Content.ReadFromJsonAsync<User>();
+    }
+
+    public async Task<User> LoginAsync(LoginModel loginModel)
+    {
+        _logger.LogWarning("LogingModel: " + loginModel);
+        var response = await _httpClient.PostAsJsonAsync("api/User/Login", loginModel);
+
+        if (!response.IsSuccessStatusCode)
+        {
+            throw new Exception(await response.Content.ReadAsStringAsync());
+        }
+        
         return await response.Content.ReadFromJsonAsync<User>();
     }
 }

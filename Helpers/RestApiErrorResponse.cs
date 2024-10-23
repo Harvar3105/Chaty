@@ -1,6 +1,6 @@
 ﻿using System.Net;
 
-namespace Chaty.Helpers.Services;
+namespace Helpers;
 
 public class RestApiErrorResponse
 {

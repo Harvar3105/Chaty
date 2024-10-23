@@ -18,7 +18,7 @@ namespace DAL.Domain
         public int Age { get; set; } = 0;
         // public string Email { get; set; }
         [BsonIgnore]
-        public ICollection<RefreshToken> RefreshTokens { get; set; } = new List<RefreshToken>();
+        public ICollection<RefreshToken?> RefreshTokens { get; set; } = new List<RefreshToken?>();
 
         public User()
         {

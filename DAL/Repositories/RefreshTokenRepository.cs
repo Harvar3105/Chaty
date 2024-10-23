@@ -11,7 +11,7 @@ public class RefreshTokenRepository : BaseRepository<RefreshToken>
     {
     }
 
-    public async Task<ICollection<RefreshToken>> GetUsersRefreshTokens(string id)
+    public async Task<ICollection<RefreshToken?>> GetUsersRefreshTokens(string id)
     {
         return await _collection.Find(user => user.UserId.Equals(id)).ToListAsync();
     }

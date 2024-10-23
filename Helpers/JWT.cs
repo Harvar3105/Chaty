@@ -1,4 +1,4 @@
-﻿namespace Chaty.Helpers.Services;
+﻿namespace Helpers;
 
 public class JWT
 {

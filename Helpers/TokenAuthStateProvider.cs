@@ -1,7 +1,7 @@
 ﻿using System.Security.Claims;
 using Microsoft.AspNetCore.Components.Authorization;
 
-namespace Chaty.Helpers.Services;
+namespace Helpers;
 
 public class TokenAuthStateProvider : AuthenticationStateProvider
 {
