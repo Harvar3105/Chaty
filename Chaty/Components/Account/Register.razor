@@ -11,9 +11,9 @@
 
 <h3>Register</h3>
 
-@if (!string.IsNullOrWhiteSpace(_errMessage))
+@if (!string.IsNullOrWhiteSpace(ErrMessage))
 {
-    <div class="alert alert-danger">@_errMessage</div>
+    <div class="alert alert-danger">@ErrMessage</div>
 }
 
 <EditForm Model="@Model" OnValidSubmit="HandleRegistration" FormName="register">
@@ -59,10 +59,19 @@
 </EditForm>
 
 @code {
-    [SupplyParameterFromForm] private RegisterModel Model { get; set; } = new ();
-    private string? _errMessage;
+    [SupplyParameterFromForm] public RegisterModel Model { get; set; } = new ();
+    public string? ErrMessage;
+    
+    //Used for moq Unit-testing
+    public Register(SignInManager<User> signInManager, Uow uow, RefreshTokenFactory refreshTokenFactory, ILogger<Register> logger)
+    {
+        SignInManager = signInManager;
+        Uow = uow;
+        RefreshTokenFactory = refreshTokenFactory;
+        Logger = logger;
+    }
 
-    private async Task HandleRegistration()
+    public async Task HandleRegistration()
     {
         try
         {
@@ -114,7 +123,7 @@
             Match match = Regex.Match(e.Message, @"ERROR:\s*(\d+)");
             if (match.Success)
             {
-                _errMessage = e.Message.Replace(match.ToString(), "")
+                ErrMessage = e.Message.Replace(match.ToString(), "")
                     .Replace("\"", "")
                     .Replace("{", "")
                     .Replace("}", "")
@@ -124,7 +133,7 @@
             else
             {
                 Logger.LogWarning(e.Message);
-                _errMessage = e.Message;
+                ErrMessage = e.Message;
             }
         }
     }
