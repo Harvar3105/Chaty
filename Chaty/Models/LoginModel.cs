@@ -11,6 +11,8 @@ public class LoginModel : IValidatableObject
     [Length(6, 30, ErrorMessage = "Password length must be between 8 and 30 characters")]
     public string Password { get; set; }
 
+    public bool isPersistant { get; set; } = default!;
+
     public bool isEmail { get; private set; } = false;
 
     public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
@@ -38,6 +40,6 @@ public class LoginModel : IValidatableObject
 
     public override string ToString()
     {
-        return $"{Login} {Password}";
+        return $"{Login} {Password} {isPersistant}";
     }
 }

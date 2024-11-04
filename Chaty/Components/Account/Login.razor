@@ -1,0 +1,78 @@
+﻿@page "/Account/Login"
+@using Chaty.Models
+
+@inject ILogger<Login> Logger
+
+<PageTitle>Login</PageTitle>
+
+<h3>Login</h3>
+
+@if (!string.IsNullOrWhiteSpace(_errMessage))
+{
+    <div class="alert alert-danger">@_errMessage</div>
+}
+
+<EditForm Model="Model" OnValidSubmit="HandleLogin" FormName="login">
+    <DataAnnotationsValidator/>
+    <ValidationSummary/>
+    
+    <div>
+        <label for="login">Login</label>
+        <InputText id="login" @bind-Value="Model.Login" class="form-control"/>
+        <ValidationMessage For="@(() => Model.Login )"/>
+    </div>
+    <div>
+        <label for="password">Password</label>
+        <InputText id="password" @bind-Value="Model.Password" class="form-control"/>
+        <ValidationMessage For="@(() => Model.Password )"/>
+    </div>
+    <div>
+        <label for="persistant">Remember me</label>
+        <InputCheckbox id="persistant" @bind-Value="Model.isPersistant" class="form-check"/>
+        <ValidationMessage For="@(() => Model.isPersistant)" />
+    </div>
+    
+    <br/>
+    <button type="submit" class="btn btn-primary">Log in</button>
+</EditForm>
+
+@code {
+    [SupplyParameterFromForm] private LoginModel Model { get; set; }= new();
+    private string? _errMessage;
+
+    private async Task HandleLogin()
+    {
+        try
+        {
+            User? user;
+            if (Model.isEmail) user = await SignInManager.UserManager.FindByEmailAsync(Model.Login);
+            else user = await SignInManager.UserManager.FindByNameAsync(Model.Login);
+            
+            if (user == null)
+            {
+                throw new Exception($"WebApi login failed, Login {Model.Login} not found");
+            }
+            
+            var result = await SignInManager.PasswordSignInAsync(user, Model.Password, Model.isPersistant, false);
+            if (!result.Succeeded)
+            {
+                throw new Exception($"WebApi login failed, password {Model.Password} " +
+                                    $"for email {Model.Login} was wrong");
+            }
+            
+            var claimsPrincipal = await SignInManager.CreateUserPrincipalAsync(user!);
+            if (claimsPrincipal == null)
+            {
+                throw new Exception("WebApi login failed, claimsPrincipal null");
+            }
+
+            //In case of SSR, will throw NavigationException that needs to be ignored.
+            Navigation.NavigateTo("/", true);
+        }
+        catch (Exception e) when (! (e is NavigationException))
+        {
+            Logger.LogWarning(e.Message);
+            _errMessage = e.Message;
+        }
+    }
+}

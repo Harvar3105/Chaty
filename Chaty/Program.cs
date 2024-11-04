@@ -5,8 +5,7 @@ using Chaty.Components;
 using Chaty.Services;
 using DAL;
 using DAL.Domain;
-using Helpers;
-using Microsoft.AspNetCore.Components.Authorization;
+using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
@@ -60,7 +59,11 @@ builder.Services.AddScoped<IMongoDatabase>(sp =>
 
 builder.Services.AddScoped<IMongoDbContext, MongoDbContext>();
 
-builder.Services.AddScoped<AuthenticationStateProvider, TokenAuthStateProvider>();
+// builder.Services.AddBlazoredSessionStorage();
+builder.Services.AddAuthorization();
+// builder.Services.AddCascadingAuthenticationState();
+builder.Services.AddAuthorizationCore();
+// builder.Services.AddScoped<AuthenticationStateProvider, TokenAuthStateProvider>();
 
 builder.Services.AddScoped<Uow>();
 
@@ -84,8 +87,13 @@ builder.Services
 
 JwtSecurityTokenHandler.DefaultInboundClaimFilter.Clear();
 builder.Services
-    .AddAuthentication()
-    .AddCookie(options => options.SlidingExpiration = true)
+    .AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
+    .AddCookie(options =>
+    {
+        options.SlidingExpiration = true;
+        options.LoginPath = "/login";
+        options.LogoutPath = "/logout";
+    })
     .AddJwtBearer(options =>
     {
         options.RequireHttpsMetadata = false;
@@ -115,6 +123,7 @@ builder.Services.AddCors(options =>
 });
 
 builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddScoped<Redirector>();
 
 //-------------------------------------------------------------------
 var app = builder.Build();
@@ -142,7 +151,6 @@ app.UseAuthorization();
 app.UseStaticFiles();
 app.UseAntiforgery();
 app.UseCors("CorsAllowAll");
-
 
 app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode();

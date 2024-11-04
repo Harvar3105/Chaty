@@ -1,13 +1,11 @@
 ﻿using System.Net;
 using System.Security.Claims;
-using System.Security.Principal;
 using Chaty.Models;
 using DAL;
 using DAL.Domain;
 using Helpers;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
-using MongoDB.Driver;
 
 namespace Chaty.API;
 
@@ -47,8 +45,6 @@ public class UserController : Controller
             ? expiresInSeconds
             : _configuration.GetValue<int>("JWT:expiresInSeconds");
         
-        _logger.LogWarning("RegisterModel: " + model);
-        
         var user = await _userManager.FindByEmailAsync(model.Email);
         if (user != null)
         {
@@ -71,6 +67,7 @@ public class UserController : Controller
         var refreshToken = _refreshTokenFactory.Generate(user.Id);
         await _uow.RefreshTokenRepository.AddAsync(refreshToken);
         user.RefreshTokens.Add(refreshToken);
+        user.Roles.Add("Default");
         
         
         if (string.IsNullOrWhiteSpace(user.Id))
@@ -85,7 +82,6 @@ public class UserController : Controller
         }
         
         refreshToken.UserId = user.Id;
-        _logger.LogCritical("User: " + user);
         
         var result = await _userManager.CreateAsync(user, model.Password);
         if (!result.Succeeded)
@@ -138,6 +134,7 @@ public class UserController : Controller
         );
         var res = new JWT()
         {
+            UserId = user.Id,
             Jwt = jwt,
             RefreshToken = refreshToken.RefreshToken,
         };
@@ -183,6 +180,8 @@ public class UserController : Controller
             _logger.LogWarning("WebApi login failed, claimsPrincipal null");
             return NotFound("WebApi login failed, claimsPrincipal null");
         }
+
+        await _signInManager.SignInAsync(user, false);
 
         var tokens = await _uow.RefreshTokenRepository.GetUsersRefreshTokens(user.Id!);
         var tokensToDelete = tokens

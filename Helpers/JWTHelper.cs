@@ -23,6 +23,12 @@ public static class JWTHelper
         return new JwtSecurityTokenHandler().WriteToken(token);
     }
 
+    public static IEnumerable<Claim> ParseClaimsFromJwt(string token)
+    {
+        var jwt = new JwtSecurityToken(token);
+        return jwt.Claims;
+    }
+
     public static bool ValidateJWT(string jwt, string key, string issuer, string audience)
     {
         var validationParams = new TokenValidationParameters()

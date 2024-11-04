@@ -1,8 +1,9 @@
 ﻿using Chaty.Models;
-using DAL.Domain;
+using Helpers;
 
 namespace Chaty.Services;
 
+[Obsolete("This class is no longer used, but might come in handy in further versions.")]
 public class HttpService
 {
     private readonly HttpClient _httpClient;
@@ -14,7 +15,7 @@ public class HttpService
         _logger = logger;
     }
 
-    public async Task<User> RegisterAsync(RegisterModel registerModel)
+    public async Task<JWT> RegisterAsync(RegisterModel registerModel)
     {
         _logger.LogWarning("RegisterModel: " + registerModel);
         var response = await _httpClient.PostAsJsonAsync("api/User/Register", registerModel);
@@ -23,11 +24,12 @@ public class HttpService
         {
             throw new Exception(await response.Content.ReadAsStringAsync());
         }
-
-        return await response.Content.ReadFromJsonAsync<User>();
+        var jwt = await response.Content.ReadFromJsonAsync<JWT>();
+        
+        return jwt;
     }
 
-    public async Task<User> LoginAsync(LoginModel loginModel)
+    public async Task<JWT> LoginAsync(LoginModel loginModel)
     {
         _logger.LogWarning("LogingModel: " + loginModel);
         var response = await _httpClient.PostAsJsonAsync("api/User/Login", loginModel);
@@ -37,6 +39,7 @@ public class HttpService
             throw new Exception(await response.Content.ReadAsStringAsync());
         }
         
-        return await response.Content.ReadFromJsonAsync<User>();
+        
+        return await response.Content.ReadFromJsonAsync<JWT>();
     }
 }

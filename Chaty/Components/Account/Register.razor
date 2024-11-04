@@ -1,0 +1,131 @@
+﻿@page "/Account/Register"
+@* @rendermode InteractiveServer *@
+@using Chaty.Models
+@using System.Text.RegularExpressions
+@using System.Security.Claims
+@inject ILogger<Register> Logger
+@inject Uow Uow
+@inject RefreshTokenFactory RefreshTokenFactory
+
+<PageTitle>Register</PageTitle>
+
+<h3>Register</h3>
+
+@if (!string.IsNullOrWhiteSpace(_errMessage))
+{
+    <div class="alert alert-danger">@_errMessage</div>
+}
+
+<EditForm Model="@Model" OnValidSubmit="HandleRegistration" FormName="register">
+    <DataAnnotationsValidator />
+    <ValidationSummary />
+
+    <div>
+        <label for="username">Username</label>
+        <InputText id="username" @bind-Value="Model.Username" class="form-control" />
+        <ValidationMessage For="@(() => Model.Username)" />
+    </div>
+    
+    <div>
+        <label for="firstName">First Name (Optional)</label>
+        <InputText id="firstName" @bind-Value="Model.FirstName" class="form-control" />
+    </div>
+
+    <div>
+        <label for="lastName">Last Name (Optional)</label>
+        <InputText id="lastName" @bind-Value="Model.LastName" class="form-control" />
+    </div>
+
+    <div>
+        <label for="age">Age</label>
+        <InputNumber id="age" @bind-Value="Model.Age" class="form-control" />
+        <ValidationMessage For="@(() => Model.Age)" />
+    </div>
+
+    <div>
+        <label for="email">Email</label>
+        <InputText id="email" @bind-Value="Model.Email" class="form-control" />
+        <ValidationMessage For="@(() => Model.Email)" />
+    </div>
+    
+    <div>
+        <label for="password">Password</label>
+        <InputText id="password" @bind-Value="Model.Password" class="form-control" />
+        <ValidationMessage For="@(() => Model.Password)"></ValidationMessage>
+    </div>
+
+    <br/>
+    <button type="submit" class="btn btn-primary">Register</button>
+</EditForm>
+
+@code {
+    [SupplyParameterFromForm] private RegisterModel Model { get; set; } = new ();
+    private string? _errMessage;
+
+    private async Task HandleRegistration()
+    {
+        try
+        {
+            var user = await SignInManager.UserManager.FindByEmailAsync(Model.Email);
+            if (user != null)
+            {
+                throw new Exception($"User with email {Model.Email} is already registered");
+            }
+            
+            user = new User(username: Model.Username,
+                firstName: Model.FirstName,
+                lastName: Model.LastName,
+                email: Model.Email,
+                age: Model.Age);
+        
+            var refreshToken = RefreshTokenFactory.Generate(user.Id);
+            await Uow.RefreshTokenRepository.AddAsync(refreshToken);
+            user.RefreshTokens.Add(refreshToken);
+            user.Roles.Add("Default");
+            
+            if (string.IsNullOrWhiteSpace(user.Id))
+            {
+                throw new Exception("User add does not succeeded!");
+            }
+            
+            refreshToken.UserId = user.Id;
+        
+            var result = await SignInManager.UserManager.CreateAsync(user, Model.Password);
+            if (!result.Succeeded)
+            {
+                throw new Exception("Failed to create a new user!");
+            }
+            
+            result = await SignInManager.UserManager.AddClaimsAsync(user, new List<Claim>()
+            {
+                new (ClaimTypes.Name, user.UserName)
+            });
+            if (!result.Succeeded)
+            {
+                throw new Exception("Failed to create user claims!");
+            }
+
+            await SignInManager.SignInAsync(user, false);
+            
+            Navigation.NavigateTo("/", true);
+        }
+        catch (Exception e)
+        {
+            Match match = Regex.Match(e.Message, @"ERROR:\s*(\d+)");
+            if (match.Success)
+            {
+                _errMessage = e.Message.Replace(match.ToString(), "")
+                    .Replace("\"", "")
+                    .Replace("{", "")
+                    .Replace("}", "")
+                    .Replace("message", "")
+                    .Replace(":. ", "");
+            }
+            else
+            {
+                Logger.LogWarning(e.Message);
+                _errMessage = e.Message;
+            }
+        }
+    }
+}

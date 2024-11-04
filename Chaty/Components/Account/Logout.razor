@@ -1,0 +1,20 @@
+﻿@page "/Account/Logout"
+@inject ILogger<Logout> Logger
+
+@code
+{
+    [CascadingParameter]
+    private Task<AuthenticationState>? AuthState { get; set; }
+    
+    protected override async Task OnInitializedAsync()
+    {
+        if (AuthState is not null)
+        {
+            var user = (await AuthState).User;
+            Logger.LogInformation($"{user.Identity?.Name} is logging out.");
+        }
+        
+        await SignInManager.SignOutAsync();
+        Navigation.NavigateTo("/", true);
+    }
+}
