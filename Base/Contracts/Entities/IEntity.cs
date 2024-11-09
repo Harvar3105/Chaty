@@ -1,10 +1,12 @@
-﻿using MongoDB.Bson;
+﻿using System.ComponentModel.DataAnnotations;
+using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
 
-namespace Base.Interfaces;
+namespace Base.Contracts.Entities;
 
 public interface IEntity
 {
+    [Key]
     [BsonId]
     [BsonRepresentation(BsonType.ObjectId)]
     public string? Id { get; set; }

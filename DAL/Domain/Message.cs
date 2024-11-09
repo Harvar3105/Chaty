@@ -1,12 +1,17 @@
 ﻿using Base;
+using Base.Contracts.Entities;
 using MongoDB.Bson.Serialization.Attributes;
+using MongoDbGenericRepository.Attributes;
 
 namespace DAL.Domain;
 
+[CollectionName("Messages")]
 public class Message : BaseEntity
 {
+    [BsonIgnore]
     private User? _user;
     private string? _userId;
+    [BsonIgnore]
     private Chat? _chat;
     private string? _chatId;
 

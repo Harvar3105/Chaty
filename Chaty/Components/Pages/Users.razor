@@ -1,0 +1,88 @@
+﻿@page "/Users"
+@using Chaty.Models
+@using FuzzySharp
+@inject ILogger<Users> Logger
+@rendermode InteractiveServer
+
+
+<PageTitle>Users</PageTitle>
+
+<h3>Find user</h3>
+
+<EditForm Model="Model" OnValidSubmit="HandleUserSearch" FormName="UserSearch">
+    <DataAnnotationsValidator />
+    <ValidationSummary />
+    
+    <label for="usersearch"> Type users username:</label>
+    <InputText id="usersearch" @bind-Value="Model.Username" placeholder="Type username here!"/>
+
+    <br/>
+    <button type="submit" class="btn btn-primary">Search</button>
+</EditForm>
+<br/>
+
+@if (_usersList != null && !_isEmptySearchResult)
+{
+    //TODO: id and roles should only be visible for admins
+    <table id="usertable" class="table">
+        <thead>
+        <tr>
+            <th>ID</th>
+            <th>Username</th>
+            <th>First name</th>
+            <th>Last name</th>
+            <th>Age</th>
+            <th>Email</th>
+            <th>Role</th>
+        </tr>
+        </thead>
+        <tbody>
+        @foreach (var user in _usersList)
+        {
+        <tr>
+            <td>@user.Id</td>
+            <td>@user.UserName</td>
+            <td>@user.FirstName</td>
+            <td>@user.LastName</td>
+            <td>@user.Age</td>
+            <td>@user.Email</td>
+            <td>@string.Join(", ", user.Roles)</td>
+        </tr>
+        }
+        </tbody>
+    </table>
+}
+else
+{
+    <div class="alert alert-danger">Sorry, no user were found.</div>
+}
+
+
+@code {
+    [SupplyParameterFromForm] public UserSearchModel Model { get; set; } = new ();
+    private List<User>? _usersList;
+    private bool _isEmptySearchResult = false;
+
+    protected override Task OnInitializedAsync()
+    {
+        _usersList = UserManager.Users.ToList();
+        Logger.LogInformation("Users: " + string.Join(", " ,_usersList.Select(u => u.UserName)));
+        return Task.CompletedTask;
+    }
+
+    public void HandleUserSearch()
+    {
+        var result = UserManager.Users
+            .AsEnumerable() //Forces data to load in memory. Complex comparisons cannot be translated via LINQ
+            .Where(u =>
+                u.UserName!.Equals(Model.Username, StringComparison.OrdinalIgnoreCase)
+                || Fuzz.PartialRatio(u.UserName, Model.Username) >= 50
+            ).ToList();
+
+        _usersList = result;
+        if (!result.Any()) _isEmptySearchResult = true;
+        else _isEmptySearchResult = false;
+        
+        Logger.LogInformation($"Found users with {Model.Username}:  {string.Join(", " ,_usersList.Select(u => u.UserName))}");
+    }
+}

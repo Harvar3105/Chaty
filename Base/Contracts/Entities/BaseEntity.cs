@@ -1,9 +1,8 @@
 ﻿using System.ComponentModel.DataAnnotations;
-using Base.Interfaces;
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
 
-namespace Base;
+namespace Base.Contracts.Entities;
 
 public abstract class BaseEntity : IEntity
 {

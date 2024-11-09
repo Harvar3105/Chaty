@@ -1,11 +1,17 @@
 ﻿using Base;
+using Base.Contracts.Entities;
+using MongoDB.Bson.Serialization.Attributes;
+using MongoDbGenericRepository.Attributes;
 
 namespace DAL.Domain;
 
+[CollectionName("Chats")]
 public class Chat : BaseEntity
 {
     public List<string>? UsersIds = new List<string>();
+    [BsonIgnore]
     public List<User>? Users = new List<User>();
+    [BsonIgnore]
     private User? _admin;
     private string? _adminId;
     private string _chatName;

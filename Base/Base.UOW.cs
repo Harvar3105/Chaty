@@ -1,4 +1,5 @@
-﻿using MongoDbGenericRepository;
+﻿using Base.Contracts;
+using MongoDbGenericRepository;
 
 namespace Base;
 

@@ -1,5 +1,6 @@
 ﻿using System.Net;
 using System.Security.Claims;
+using BLL;
 using Chaty.Models;
 using DAL;
 using DAL.Domain;
@@ -13,21 +14,21 @@ namespace Chaty.API;
 [Route("api/[controller]/[action]")]
 public class UserController : Controller
 {
-    private readonly Uow _uow;
     private readonly IConfiguration _configuration;
     private readonly UserManager<User> _userManager;
     private readonly SignInManager<User> _signInManager;
     private readonly ILogger<UserController> _logger;
     private readonly RefreshTokenFactory _refreshTokenFactory;
+    private readonly RefreshTokenService _refreshRokenService;
 
-    public UserController(Uow uow, IConfiguration configuration, UserManager<User> userManager, ILogger<UserController> logger, SignInManager<User> signInManager, RefreshTokenFactory refreshTokenFactory)
+    public UserController(IConfiguration configuration, UserManager<User> userManager, ILogger<UserController> logger, SignInManager<User> signInManager, RefreshTokenFactory refreshTokenFactory, RefreshTokenService refreshRokenService)
     {
-        _uow = uow;
         _configuration = configuration;
         _userManager = userManager;
         _logger = logger;
         _signInManager = signInManager;
         _refreshTokenFactory = refreshTokenFactory;
+        _refreshRokenService = refreshRokenService;
     }
 
     [HttpPost]
@@ -65,7 +66,7 @@ public class UserController : Controller
             age: model.Age);
         
         var refreshToken = _refreshTokenFactory.Generate(user.Id);
-        await _uow.RefreshTokenRepository.AddAsync(refreshToken);
+        await _refreshRokenService.AddAsync(refreshToken);
         user.RefreshTokens.Add(refreshToken);
         user.Roles.Add("Default");
         
@@ -183,14 +184,14 @@ public class UserController : Controller
 
         await _signInManager.SignInAsync(user, false);
 
-        var tokens = await _uow.RefreshTokenRepository.GetUsersRefreshTokens(user.Id!);
+        var tokens = await _refreshRokenService.GetUsersRefreshTokens(user.Id!);
         var tokensToDelete = tokens
             .Where(t => t != null && t.ExpirationDateTime < DateTime.UtcNow)
             .Select(t => t?.Id).ToList();
         
         if (tokensToDelete.Any())
         {
-            await _uow.RefreshTokenRepository.DeleteMany(tokensToDelete);
+            await _refreshRokenService.DeleteMany(tokensToDelete);
             _logger.LogInformation($"Deleted {tokensToDelete.Count} refresh tokens");
         }
 
@@ -198,7 +199,7 @@ public class UserController : Controller
         if (tokens.Count == 0 || tokensToDelete.Count == tokens.Count)
         {
             refreshToken = _refreshTokenFactory.Generate(user.Id);
-            await _uow.RefreshTokenRepository.AddAsync(refreshToken);
+            await _refreshRokenService.AddAsync(refreshToken);
         }
         else
         {

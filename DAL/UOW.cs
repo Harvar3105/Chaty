@@ -4,7 +4,8 @@ using MongoDbGenericRepository;
 
 namespace DAL;
 
-//TODO: is it really disposable?
+//TODO: should it be implemented? MongoDB usually does not support transactions
+[Obsolete("This class is obsolete. Unclear should it be used or not.")]
 public class Uow : BaseUow<IMongoDbContext>, IDisposable
 {
     private readonly Lazy<ChatRepository> _chatRepository;
@@ -15,12 +16,16 @@ public class Uow : BaseUow<IMongoDbContext>, IDisposable
 
     private readonly Lazy<RefreshTokenRepository> _refreshTokenRepository;
     public RefreshTokenRepository RefreshTokenRepository => _refreshTokenRepository.Value;
+    
+    private readonly Lazy<FriendshipRepository> _friendshipRepository;
+    public FriendshipRepository FriendshipRepository => _friendshipRepository.Value;
 
     public Uow(IMongoDbContext ctx) : base(ctx)
     {
-        _chatRepository = new Lazy<ChatRepository>(() => new ChatRepository(Ctx, "Chat"));
-        _messageRepository = new Lazy<MessageRepository>(() => new MessageRepository(Ctx, "Message"));
-        _refreshTokenRepository = new Lazy<RefreshTokenRepository>(() => new RefreshTokenRepository(Ctx, "RefreshToken"));
+        _friendshipRepository = new Lazy<FriendshipRepository>(() => new FriendshipRepository(Ctx, "Friendships"));
+        _chatRepository = new Lazy<ChatRepository>(() => new ChatRepository(Ctx, "Chats"));
+        _messageRepository = new Lazy<MessageRepository>(() => new MessageRepository(Ctx, "Messages"));
+        _refreshTokenRepository = new Lazy<RefreshTokenRepository>(() => new RefreshTokenRepository(Ctx, "RefreshTokens"));
     }
 
     public void Dispose()

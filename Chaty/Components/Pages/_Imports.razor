@@ -1,2 +1,6 @@
 ﻿@using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Identity
+@using DAL.Domain
 @attribute [Authorize]
+@inject NavigationManager Navigation
+@inject UserManager<User> UserManager

@@ -1,6 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations;
 
-namespace Base;
+namespace Base.Contracts.Entities;
 
 public class BaseRefreshToken : BaseEntity
 {

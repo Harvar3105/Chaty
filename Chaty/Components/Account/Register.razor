@@ -3,9 +3,10 @@
 @using Chaty.Models
 @using System.Text.RegularExpressions
 @using System.Security.Claims
+@using Base.Contracts.Services
 @inject ILogger<Register> Logger
-@inject Uow Uow
 @inject RefreshTokenFactory RefreshTokenFactory
+@inject IRefreshTokenService<RefreshToken> RefreshTokenService
 
 <PageTitle>Register</PageTitle>
 
@@ -49,8 +50,9 @@
     </div>
     
     <div>
+        @* TODO: Password should not be visible. Maybe require password confirmation? *@
         <label for="password">Password</label>
-        <InputText id="password" @bind-Value="Model.Password" class="form-control" />
+        <InputText id="password" @bind-Value="Model.Password" class="form-control"/>
         <ValidationMessage For="@(() => Model.Password)"></ValidationMessage>
     </div>
 
@@ -63,10 +65,9 @@
     public string? ErrMessage;
     
     //Used for moq Unit-testing
-    public Register(SignInManager<User> signInManager, Uow uow, RefreshTokenFactory refreshTokenFactory, ILogger<Register> logger)
+    public Register(SignInManager<User> signInManager, RefreshTokenFactory refreshTokenFactory, ILogger<Register> logger)
     {
         SignInManager = signInManager;
-        Uow = uow;
         RefreshTokenFactory = refreshTokenFactory;
         Logger = logger;
     }
@@ -88,7 +89,7 @@
                 age: Model.Age);
         
             var refreshToken = RefreshTokenFactory.Generate(user.Id);
-            await Uow.RefreshTokenRepository.AddAsync(refreshToken);
+            await RefreshTokenService.AddAsync(refreshToken);
             user.RefreshTokens.Add(refreshToken);
             user.Roles.Add("Default");
             
@@ -98,11 +99,15 @@
             }
             
             refreshToken.UserId = user.Id;
+            
+            Logger.LogWarning(user.ToString());
         
             var result = await SignInManager.UserManager.CreateAsync(user, Model.Password);
             if (!result.Succeeded)
             {
-                throw new Exception("Failed to create a new user!");
+                var errors = result.Errors.Select(e => e.Description).ToArray();
+                Logger.LogWarning(string.Join("\n", errors));
+                throw new Exception("Failed to create a new user!\n" + string.Join("\n", errors));
             }
             
             result = await SignInManager.UserManager.AddClaimsAsync(user, new List<Claim>()
@@ -118,7 +123,7 @@
             
             Navigation.NavigateTo("/", true);
         }
-        catch (Exception e)
+        catch (Exception e) when(!(e is NavigationException))
         {
             Match match = Regex.Match(e.Message, @"ERROR:\s*(\d+)");
             if (match.Success)

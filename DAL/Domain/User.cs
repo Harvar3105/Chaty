@@ -1,7 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using System.Net.Mail;
 using AspNetCore.Identity.MongoDbCore.Models;
-using Base.Interfaces;
 using MongoDB.Bson.Serialization.Attributes;
 using MongoDbGenericRepository.Attributes;
 
