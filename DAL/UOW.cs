@@ -22,10 +22,10 @@ public class Uow : BaseUow<IMongoDbContext>, IDisposable
 
     public Uow(IMongoDbContext ctx) : base(ctx)
     {
-        _friendshipRepository = new Lazy<FriendshipRepository>(() => new FriendshipRepository(Ctx, "Friendships"));
-        _chatRepository = new Lazy<ChatRepository>(() => new ChatRepository(Ctx, "Chats"));
-        _messageRepository = new Lazy<MessageRepository>(() => new MessageRepository(Ctx, "Messages"));
-        _refreshTokenRepository = new Lazy<RefreshTokenRepository>(() => new RefreshTokenRepository(Ctx, "RefreshTokens"));
+        // _friendshipRepository = new Lazy<FriendshipRepository>(() => new FriendshipRepository(Ctx, "Friendships"));
+        // _chatRepository = new Lazy<ChatRepository>(() => new ChatRepository(Ctx, "Chats"));
+        // _messageRepository = new Lazy<MessageRepository>(() => new MessageRepository(Ctx, "Messages"));
+        // _refreshTokenRepository = new Lazy<RefreshTokenRepository>(() => new RefreshTokenRepository(Ctx, "RefreshTokens"));
     }
 
     public void Dispose()

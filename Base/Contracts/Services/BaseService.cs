@@ -5,35 +5,35 @@ namespace Base.Contracts.Services;
 
 public class BaseService<T> : IService<T> where T : class, IEntity
 {
-    protected readonly Lazy<IRepository<T>> _repository;
+    protected readonly IRepository<T> _repository;
 
-    public BaseService(Lazy<IRepository<T>> repository)
+    public BaseService(IRepository<T> repository)
     {
         _repository = repository;
     }
 
     public Task<List<T>> GetAllAsync()
     {
-        return _repository.Value.GetAllAsync();
+        return _repository.GetAllAsync();
     }
 
     public Task<T> GetByIdAsync(string id)
     {
-        return _repository.Value.GetByIdAsync(id);
+        return _repository.GetByIdAsync(id);
     }
 
     public Task AddAsync(T entity)
     {
-        return _repository.Value.AddAsync(entity);
+        return _repository.AddAsync(entity);
     }
 
     public Task UpdateAsync(string id, T updatedEntity)
     {
-        return _repository.Value.UpdateAsync(id, updatedEntity);
+        return _repository.UpdateAsync(id, updatedEntity);
     }
 
     public Task DeleteAsync(string id)
     {
-        return _repository.Value.DeleteAsync(id);
+        return _repository.DeleteAsync(id);
     }
 }

@@ -1,19 +1,18 @@
 ﻿using Base.Contracts.Repositories;
 using Base.Contracts.Services;
 using DAL.Domain;
-using DAL.Repositories;
 using MongoDB.Driver;
 
 namespace BLL;
 
 public class RefreshTokenService : BaseService<RefreshToken>, IRefreshTokenService<RefreshToken>
 {
-    public RefreshTokenService(Lazy<IRepository<RefreshToken>> repository) : base(repository)
+    public RefreshTokenService(IRepository<RefreshToken> repository) : base(repository)
     {
     }
     
     private IRefreshTokenRepository<RefreshToken> RefreshTokenRepository =>
-        (IRefreshTokenRepository<RefreshToken>) _repository.Value;
+        (IRefreshTokenRepository<RefreshToken>) _repository;
     
     public Task<ICollection<RefreshToken?>> GetUsersRefreshTokens(string id)
     {

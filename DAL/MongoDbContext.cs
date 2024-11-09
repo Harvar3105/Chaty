@@ -31,6 +31,7 @@ public class MongoDbContext(IMongoClient client, IMongoDatabase database) : IMon
 
     public void SetGuidRepresentation(GuidRepresentation guidRepresentation)
     {
+        //TODO: should it be even configured?
         throw new NotImplementedException();
     }
     

@@ -1,10 +1,15 @@
 using System.IdentityModel.Tokens.Jwt;
 using System.Text;
 using AspNetCore.Identity.MongoDbCore;
+using Base.Contracts.Repositories;
+using Base.Contracts.Services;
+using BLL;
 using Chaty.Components;
 using Chaty.Services;
 using DAL;
 using DAL.Domain;
+using DAL.Domain.AddressTables;
+using DAL.Repositories;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Options;
@@ -125,6 +130,8 @@ builder.Services.AddCors(options =>
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddScoped<Redirector>();
 
+RegisterServices(builder.Services);
+
 //-------------------------------------------------------------------
 var app = builder.Build();
 //-------------------------------------------------------------------
@@ -156,5 +163,20 @@ app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode();
 
 app.Run();
+
+void RegisterServices(IServiceCollection services)
+{
+    services.AddScoped<IRepository<Chat>, ChatRepository>();
+    services.AddScoped<IRepository<Friendship>, FriendshipRepository>();
+    services.AddScoped<IRepository<Message>, MessageRepository>();
+    services.AddScoped<IRepository<RefreshToken>, RefreshTokenRepository>();
+    
+//    ----------Services----------
+
+    services.AddScoped<IChatService<Chat>, ChatService>();
+    services.AddScoped<IFriendshipService<Friendship>, FriendshipService>();
+    services.AddScoped<IMessageService<Message>, MessageService>();
+    services.AddScoped<IRefreshTokenService<RefreshToken>, RefreshTokenService>();
+}
 
 public partial class Program { }
