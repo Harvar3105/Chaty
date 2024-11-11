@@ -8,9 +8,9 @@ namespace DAL.Domain;
 [CollectionName("Chats")]
 public class Chat : BaseEntity
 {
-    public List<string>? UsersIds = new List<string>();
+    public List<string>? UsersIds = [];
     [BsonIgnore]
-    public List<User>? Users = new List<User>();
+    public List<User>? Users = [];
     [BsonIgnore]
     private User? _admin;
     private string? _adminId;

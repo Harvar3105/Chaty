@@ -1,7 +1,11 @@
 ﻿@page "/Users"
+@using System.Security.Claims
+@using Base.Contracts.Services
 @using Chaty.Models
+@using DAL.Domain.AddressTables
 @using FuzzySharp
 @inject ILogger<Users> Logger
+@inject IFriendshipService<Friendship> FriendshipService
 @rendermode InteractiveServer
 
 
@@ -13,41 +17,62 @@
     <DataAnnotationsValidator />
     <ValidationSummary />
     
-    <label for="usersearch"> Type users username:</label>
-    <InputText id="usersearch" @bind-Value="Model.Username" placeholder="Type username here!"/>
-
-    <br/>
-    <button type="submit" class="btn btn-primary">Search</button>
+    <div class="d-flex" style="gap: 2rem;">
+        <label for="usersearch" class="">Type users username:</label>
+        <InputText id="usersearch" @bind-Value="Model.Username" placeholder="Type username here!" class="form-control" />
+        <button type="submit" class="btn btn-primary ml-2">Search</button>
+    </div>
+    
 </EditForm>
 <br/>
-
 @if (_usersList != null && !_isEmptySearchResult)
 {
     //TODO: id and roles should only be visible for admins
-    <table id="usertable" class="table">
+    <table id="usertable" class="table" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
         <thead>
         <tr>
-            <th>ID</th>
+            @if (AuthenticationState!.Result.User.IsInRole("Admin"))
+            {
+                <th>ID</th>
+                <th>Role</th>
+            }
             <th>Username</th>
             <th>First name</th>
             <th>Last name</th>
             <th>Age</th>
             <th>Email</th>
-            <th>Role</th>
+            <th>Friendship</th>
         </tr>
         </thead>
         <tbody>
         @foreach (var user in _usersList)
         {
-        <tr>
-            <td>@user.Id</td>
-            <td>@user.UserName</td>
-            <td>@user.FirstName</td>
-            <td>@user.LastName</td>
-            <td>@user.Age</td>
-            <td>@user.Email</td>
-            <td>@string.Join(", ", user.Roles)</td>
-        </tr>
+            <tr>
+                @if (AuthenticationState!.Result.User.IsInRole("Admin"))
+                {
+                    <td>@user.Id.Trim()</td>
+                    <td>@string.Join(", ", user.Roles).Trim()</td>
+                }
+                <td>@user.UserName?.Trim()</td>
+                <td>@user.FirstName?.Trim()</td>
+                <td>@user.LastName?.Trim()</td>
+                <td>@user.Age</td>
+                <td>@user.Email?.Trim()</td>
+                <td>
+                    @if (_usersFriendships.ToArray().Contains(user.Id))
+                    {
+                        <button class="btn btn-red" @onclick="() => HandleRemoveFriend(user.Id)">
+                            <span class="bi bi-person-remove" aria-hidden="true"></span>Remove friend
+                        </button>
+                    }
+                    else
+                    {
+                        <button class="btn btn-green" @onclick="() => HandleAddFriend(user.Id)">
+                            <span class="bi bi-person-add" aria-hidden="true"></span>Add friend
+                        </button>
+                    }
+                </td>
+            </tr>
         }
         </tbody>
     </table>
@@ -59,15 +84,77 @@ else
 
 
 @code {
+    [CascadingParameter]
+    private Task<AuthenticationState>? AuthenticationState { get; set; }
+    
     [SupplyParameterFromForm] public UserSearchModel Model { get; set; } = new ();
     private List<User>? _usersList;
+    private readonly HashSet<string> _usersFriendships = [];
     private bool _isEmptySearchResult = false;
 
-    protected override Task OnInitializedAsync()
+    private async void HandleAddFriend(string id)
     {
+        var userId = await GetId();
+        var friendship = new Friendship(userId, id);
+
+        Logger.LogInformation($"Trying to add friendship: {userId} + {id}");
+        
+        await FriendshipService.AddAsync(friendship);
+        _usersFriendships.Add(id);
+        
+        var data = string.Join(", ", _usersFriendships.ToArray());
+        Logger.LogInformation($"Now users {userId} friendships are: {data}");
+        
+        StateHasChanged();
+    }
+
+    private async void HandleRemoveFriend(string id)
+    {
+        var userId = await GetId();
+        var friendship = new Friendship(userId, id);
+
+        Logger.LogInformation($"Trying to remove friendship: {userId} + {id}");
+        
+        await FriendshipService.RemoveAsync(friendship);
+        _usersFriendships.Remove(id);
+        
+        var data = string.Join(", ", _usersFriendships.ToArray());
+        Logger.LogInformation($"Now users {userId} friendships are: {data}");
+        
+        StateHasChanged();
+    }
+
+    private async Task<string> GetId()
+    {
+        var user = (await AuthenticationState!).User;
+        var userId = user.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        
+        if (string.IsNullOrEmpty(userId))
+        {
+            Logger.LogWarning($"Cannot find current users id! Identity: {user.Identity!.Name}, {user.Identity.IsAuthenticated}" );
+            throw new Exception($"Cannot find current users id! Identity: {user.Identity!.Name}, {user.Identity.IsAuthenticated}" );
+        }
+
+        return userId;
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        var userId = await GetId();
+        
         _usersList = UserManager.Users.ToList();
         Logger.LogInformation("Users: " + string.Join(", " ,_usersList.Select(u => u.UserName)));
-        return Task.CompletedTask;
+
+        //Userlist should not contain current user!
+        _usersList.Remove(_usersList.First(u => u.Id.Equals(userId)));
+        
+        foreach (var id in (await FriendshipService.GetFriendshipsByUserIdAsync(userId))
+                 .Select(u => u.FirstUserId.Equals(userId) ? u.SecondUserId : u.FirstUserId))
+        {
+            _usersFriendships.Add(id);
+        }
+        
+        Logger.LogInformation($"For current user{userId} found friends {string.Join(", ", _usersFriendships.ToArray())}");
     }
 
     public void HandleUserSearch()
@@ -80,8 +167,7 @@ else
             ).ToList();
 
         _usersList = result;
-        if (!result.Any()) _isEmptySearchResult = true;
-        else _isEmptySearchResult = false;
+        _isEmptySearchResult = !result.Any();
         
         Logger.LogInformation($"Found users with {Model.Username}:  {string.Join(", " ,_usersList.Select(u => u.UserName))}");
     }

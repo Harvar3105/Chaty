@@ -9,13 +9,10 @@ namespace DAL.Domain
     [CollectionName("Users")]
     public class User : MongoIdentityUser<string>
     {
-        [Required(AllowEmptyStrings = false, ErrorMessage = "Username is required")]
-        [StringLength(30)]
-        // public string Username { get; set; }
+        //TODO: users avatar icon?
         public string? FirstName { get; set; }
         public string? LastName { get; set; }
         public int Age { get; set; } = 0;
-        // public string Email { get; set; }
         [BsonIgnore]
         public ICollection<RefreshToken?> RefreshTokens { get; set; } = new List<RefreshToken?>();
 

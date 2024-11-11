@@ -6,7 +6,6 @@ namespace Base.Contracts.Entities;
 
 public interface IEntity
 {
-    [Key]
     [BsonId]
     [BsonRepresentation(BsonType.ObjectId)]
     public string? Id { get; set; }

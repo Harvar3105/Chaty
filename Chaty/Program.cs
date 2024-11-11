@@ -66,7 +66,7 @@ builder.Services.AddScoped<IMongoDbContext, MongoDbContext>();
 
 // builder.Services.AddBlazoredSessionStorage();
 builder.Services.AddAuthorization();
-// builder.Services.AddCascadingAuthenticationState();
+builder.Services.AddCascadingAuthenticationState();
 builder.Services.AddAuthorizationCore();
 // builder.Services.AddScoped<AuthenticationStateProvider, TokenAuthStateProvider>();
 
