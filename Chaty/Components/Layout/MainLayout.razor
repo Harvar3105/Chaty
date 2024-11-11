@@ -12,35 +12,27 @@
 
     <main>
         @* TODO: display users UserName and Email in case if logged in. Maybe implement account management *@
-        <div class="top-row px-4">
+        <div class="top-row px-4 text-color">
             <AuthorizeView>
                 <Authorized>
                     <text> Welcome @context.User.Identity?.Name</text>
-                    @* <button type="button" @onclick="Logout" class="nav-link">Logout</button> *@
-                    <NavLink class="nav-link" href="account/logout">
+                    @* //TODO: fix button color  *@
+                    <NavLink class="nav-link text-color" href="account/logout">
                         Logout
                     </NavLink>
-                    @* <form action="Account/Logout" method="post"> *@
-                    @*     <AntiforgeryToken/> *@
-                    @*     <input type="hidden" name="ReturnUrl" value="@currentUrl"/> *@
-                    @*     <button type="submit" class="nav-link"> *@
-                    @*         <span class="bi bi-arrow-bar-left-nav-menu" aria-hidden="true"></span> Logout *@
-                    @*     </button> *@
-                    @* </form> *@
                 </Authorized>
             
                 <NotAuthorized>
-                    <NavLink class="nav-link" href="account/login">
+                    <NavLink class="nav-link text-color" href="account/login">
                         Login
                     </NavLink>
-                    <NavLink class="nav-link" href="account/register">
+                    <NavLink class="nav-link text-color" href="account/register">
                         Register
                     </NavLink>
                 </NotAuthorized>
             </AuthorizeView>
-            <a href="https://learn.microsoft.com/aspnet/core/" target="_blank">About</a>
+            <a class="text-color" href="https://learn.microsoft.com/aspnet/core/" target="_blank">About</a>
         </div>
-        @* <div style="background-color: #b32121">You are: @HttpContext.User.Identity?.Name</div> *@
         <article class="content px-4">
             @Body
         </article>
