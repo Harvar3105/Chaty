@@ -6,6 +6,25 @@ a, .btn-link {
     color: #006bb7;
 }
 
+.light{
+    --background-color: #ffffff;
+    --font-color: #000000;
+    --link: #006bb7;
+    --button-color: #ffffff;
+}
+
+.dark{
+    --background-color: #000000;
+    --font-color: #ffffff;
+    --link: #ffffff;
+    --button-color: #006bb7;
+}
+
+main{
+    background-color: var(--background-color);
+    color: var(--font-color);
+}
+
 .btn-primary {
     color: #fff;
     background-color: #1b6ec2;

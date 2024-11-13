@@ -1,0 +1,112 @@
+﻿@page "/Account/Friends"
+@using System.Security.Claims
+@using Base.Contracts.Services
+@using DAL.Domain.AddressTables
+@inject ILogger<Friends> Logger
+@inject UserManager<User> UserManager
+@inject IFriendshipService<Friendship> FriendshipService
+@rendermode InteractiveServer
+<h3>Friends</h3>
+
+@if (_usersList != null)
+{
+<table id="usertable" class="table" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+    <thead>
+        <tr>
+            @if (AuthenticationState!.Result.User.IsInRole("Admin"))
+            {
+            <th>ID</th>
+            <th>Role</th>
+            }
+            <th>Username</th>
+            <th>First name</th>
+            <th>Last name</th>
+            <th>Age</th>
+            <th>Email</th>
+            <th>Interactions</th>
+        </tr>
+    </thead>
+    <tbody>
+    @foreach (var user in _usersList)
+    {
+    <tr>
+        @if (AuthenticationState!.Result.User.IsInRole("Admin"))
+        {
+        <td>@user.Id.Trim()</td>
+        <td>@string.Join(", ", user.Roles).Trim()</td>
+        }
+        <td>@user.UserName?.Trim()</td>
+        <td>@user.FirstName?.Trim()</td>
+        <td>@user.LastName?.Trim()</td>
+        <td>@user.Age</td>
+        <td>@user.Email?.Trim()</td>
+        <td>
+            <button class="btn btn-red" @onclick="() => HandleRemoveFriend(user.Id)">
+                <span class="bi bi-person-remove" aria-hidden="true"></span>Remove friend
+            </button>
+            @* TODO: Buttton to create chat *@
+        </td>
+    </tr>
+    }
+    </tbody>
+</table>
+}
+else
+{
+    <div class="alert alert-danger">Sorry, but here's no friends. Try find some at "Users" page!</div>
+}
+
+@code {
+    [CascadingParameter]
+    private Task<AuthenticationState>? AuthenticationState { get; set; }
+    
+    private List<User>? _usersList;
+    private readonly HashSet<string> _usersFriendships = [];
+    
+    private async void HandleRemoveFriend(string id)
+    {
+        var userId = await GetCurrentUsersId();
+        Logger.LogInformation($"Trying to remove friendship: {userId} + {id}");
+
+        await FriendshipService.RemoveByIdsAsync(userId, id);
+        _usersList!.RemoveAll(u => u.Id.Equals(id));
+        
+        var data = string.Join(", ", _usersFriendships.ToArray());
+        Logger.LogInformation($"Now users {userId} friendships are: {data}");
+        
+        StateHasChanged();
+    }
+    
+    protected override async Task OnInitializedAsync()
+    {
+        var userId = await GetCurrentUsersId();
+
+        var friendships = await FriendshipService.GetFriendshipsByUserIdAsync(userId);
+
+        foreach (var friendship in friendships)
+        {
+            _usersFriendships.Add(friendship.FirstUserId);
+            _usersFriendships.Add(friendship.SecondUserId);
+        }
+
+        _usersFriendships.Remove(userId);
+        
+        _usersList = UserManager.Users.Where(u => _usersFriendships.Contains(u.Id)).ToList();
+        
+        Logger.LogInformation($"For current user:{userId} found friends {string.Join(", ", _usersList.Select(u => u.UserName))}");
+    }
+    
+    private async Task<string> GetCurrentUsersId()
+    {
+        var user = (await AuthenticationState!).User;
+        var userId = user.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        
+        if (string.IsNullOrEmpty(userId))
+        {
+            Logger.LogWarning($"Cannot find current users id! Identity: {user.Identity!.Name}, {user.Identity.IsAuthenticated}" );
+            throw new Exception($"Cannot find current users id! Identity: {user.Identity!.Name}, {user.Identity.IsAuthenticated}" );
+        }
+
+        return userId;
+    }
+}

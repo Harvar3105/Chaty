@@ -1,4 +1,6 @@
-﻿<div class="top-row ps-3 navbar navbar-dark">
+﻿@rendermode InteractiveServer
+
+<div class="top-row ps-3 navbar navbar-dark">
     <div class="container-fluid">
         <a class="navbar-brand" href="">Chaty</a>
     </div>
@@ -32,4 +34,15 @@
             </NavLink>
         </div>
     </nav>
+    <div>
+        <button @onclick="ToggleTheme">Toggle Theme</button>
+    </div>
 </div>
+
+@code
+{
+    private async void ToggleTheme()
+    {
+        await Theme.SetDarkTheme(!Theme.GetThemeState());
+    }
+}

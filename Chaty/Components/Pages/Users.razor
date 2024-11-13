@@ -27,7 +27,6 @@
 <br/>
 @if (_usersList != null && !_isEmptySearchResult)
 {
-    //TODO: id and roles should only be visible for admins
     <table id="usertable" class="table" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
         <thead>
         <tr>
@@ -111,11 +110,9 @@ else
     private async void HandleRemoveFriend(string id)
     {
         var userId = await GetId();
-        var friendship = new Friendship(userId, id);
-
         Logger.LogInformation($"Trying to remove friendship: {userId} + {id}");
-        
-        await FriendshipService.RemoveAsync(friendship);
+
+        await FriendshipService.RemoveByIdsAsync(userId, id);
         _usersFriendships.Remove(id);
         
         var data = string.Join(", ", _usersFriendships.ToArray());

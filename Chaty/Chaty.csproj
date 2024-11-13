@@ -16,6 +16,7 @@
     <ItemGroup>
       <PackageReference Include="AspNet.Identity.MongoDB" Version="2.0.8" />
       <PackageReference Include="AspNetCore.Identity.MongoDbCore" Version="3.1.2" />
+      <PackageReference Include="Blazored.SessionStorage" Version="2.4.0" />
       <PackageReference Include="FuzzySharp" Version="2.0.2" />
       <PackageReference Include="Microsoft.AspNet.Identity.Core" Version="2.2.4" />
       <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="8.0.10" />

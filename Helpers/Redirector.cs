@@ -1,10 +1,11 @@
 ﻿using System.Diagnostics.CodeAnalysis;
 using Microsoft.AspNetCore.Components;
+using Microsoft.AspNetCore.Http;
 
-namespace Chaty.Components;
+namespace Helpers;
 
 [Obsolete("Might be useful in future, in case of specific redirections.")]
-internal sealed class Redirector(NavigationManager navigationManager)
+public sealed class Redirector(NavigationManager navigationManager)
 {
     public const string StatusCookieName = "Identity.StatusMessage";
 

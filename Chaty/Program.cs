@@ -3,6 +3,7 @@ using System.Text;
 using AspNetCore.Identity.MongoDbCore;
 using Base.Contracts.Repositories;
 using Base.Contracts.Services;
+using Blazored.SessionStorage;
 using BLL;
 using Chaty.Components;
 using Chaty.Services;
@@ -10,6 +11,7 @@ using DAL;
 using DAL.Domain;
 using DAL.Domain.AddressTables;
 using DAL.Repositories;
+using Helpers;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Options;
@@ -31,6 +33,9 @@ builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
 
 builder.Services.AddControllers();
+
+builder.Services.AddBlazoredSessionStorage();
+builder.Services.AddHttpContextAccessor();
 
 builder.Services.AddHttpClient<HttpService>(client =>
 {
@@ -171,12 +176,14 @@ void RegisterServices(IServiceCollection services)
     services.AddScoped<IRepository<Message>, MessageRepository>();
     services.AddScoped<IRepository<RefreshToken>, RefreshTokenRepository>();
     
-//    ----------Services----------
+//  ---------------------Services--------------------------------------------
 
     services.AddScoped<IChatService<Chat>, ChatService>();
     services.AddScoped<IFriendshipService<Friendship>, FriendshipService>();
     services.AddScoped<IMessageService<Message>, MessageService>();
     services.AddScoped<IRefreshTokenService<RefreshToken>, RefreshTokenService>();
+
+    services.AddScoped<ThemeService>();
 }
 
 public partial class Program { }

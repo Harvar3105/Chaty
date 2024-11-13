@@ -17,6 +17,13 @@ public class FriendshipRepository : BaseRepository<Friendship>, IFriendshipRepos
         _userManager = userManager;
     }
 
+    public async Task RemoveByIdsAsync(string firstId, string secondId)
+    {
+        await Collection.DeleteManyAsync(
+            f => f.FirstUserId.Equals(firstId) && f.SecondUserId.Equals(secondId) || 
+                 f.FirstUserId.Equals(secondId) && f.SecondUserId.Equals(firstId));
+    }
+
     private readonly UserManager<User> _userManager;
 
     public async Task<List<Friendship>> GetFriendshipsByUserIdAsync(string userId)

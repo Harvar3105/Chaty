@@ -45,6 +45,11 @@ public class FriendshipService : BaseService<Friendship>, IFriendshipService<Fri
         await FriendshipRepository.AddAsync(entity);
     }
 
+    public async Task RemoveByIdsAsync(string firstId, string secondId)
+    {
+        await FriendshipRepository.RemoveByIdsAsync(firstId, secondId);
+    }
+
     public async Task<bool> RemoveAsync(Friendship entity)
     {
         var stored = await FriendshipRepository.GetAllAsync();

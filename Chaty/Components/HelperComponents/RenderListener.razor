@@ -1,0 +1,9 @@
+﻿<h3>RenderListener</h3>
+
+@code {
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        await Theme.ForceUpdateTheme();
+    }
+
+}
