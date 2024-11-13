@@ -1,0 +1,56 @@
+﻿@page "/Chat/Create"
+@using System.Security.Claims
+@using Chaty.Models
+@using Chaty.Components.HelperComponents
+@inject ILogger<CreateChat> Logger
+
+<h3>Create new chat</h3>
+
+<EditForm Model="@Model" OnValidSubmit="HandleCreation">
+    <DataAnnotationsValidator />
+    <ValidationSummary />
+
+    <div>
+        <label for="chatName">Chat Name</label>
+        <InputText id="chatName" @bind-Value="Model.ChatName" class="form-control" />
+    </div>
+
+    <FriendsSelect @bind-SelectedUsers="Model.Users" />
+
+    <button type="submit" class="btn btn-primary">Create Chat</button>
+</EditForm>
+
+@code {
+    [CascadingParameter]
+    private Task<AuthenticationState>? AuthenticationState { get; set; }
+    
+    [SupplyParameterFromForm] public ChatModel Model { get; set; } = new ();
+
+    public async void HandleCreation()
+    {
+        var user = await GetCurrentUser();
+        if (user is null) return;
+        
+        var chat = new Chat(Model.ChatName, user, user.Id)
+        {
+            Users = Model.Users
+        };
+
+        await ChatService.AddAsync(chat);
+        
+        Navigation.NavigateTo("/");
+    }
+
+    private async Task<User?> GetCurrentUser()
+    {
+        var user = (await AuthenticationState!).User;
+        var result = await UserManager.GetUserAsync(user);
+
+        if (result is null)
+        {
+            Logger.LogWarning($"Cannot get current user with {user.FindFirst(ClaimTypes.NameIdentifier)?.Value}");
+        }
+        
+        return result;
+    }
+}

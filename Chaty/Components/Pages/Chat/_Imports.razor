@@ -1,0 +1,8 @@
+﻿@using Base.Contracts.Services
+@using DAL.Domain.AddressTables
+@inject IFriendshipService<Friendship> FriendshipService
+@inject IChatService<Chat> ChatService
+@inject UserManager<User> UserManager
+@inject NavigationManager Navigation
+@attribute [Authorize]
+@rendermode InteractiveServer

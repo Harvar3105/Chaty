@@ -10,7 +10,7 @@ public class Chat : BaseEntity
 {
     public List<string>? UsersIds = [];
     [BsonIgnore]
-    public List<User>? Users = [];
+    public List<User> Users = [];
     [BsonIgnore]
     private User? _admin;
     private string? _adminId;
@@ -48,5 +48,21 @@ public class Chat : BaseEntity
             if (!string.IsNullOrWhiteSpace(value)) _chatName = value;
             else throw new ArgumentNullException(nameof(value), "Chat name cannot be empty!");
         }
+    }
+
+    public override bool Equals(object? obj)
+    {
+        if (obj is not Chat chat) return false;
+
+        if (ChatName != chat.ChatName) return false;
+
+        if (Users is null ^ chat.Users is null) return false;
+
+        if (Users is not null && chat.Users is not null)
+        {
+            return Users.All(user => !chat.Users.Contains(user)!);
+        }
+        
+        return true;
     }
 }

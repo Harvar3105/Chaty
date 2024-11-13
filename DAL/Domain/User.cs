@@ -1,13 +1,14 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using System.Net.Mail;
 using AspNetCore.Identity.MongoDbCore.Models;
+using Microsoft.AspNet.Identity;
 using MongoDB.Bson.Serialization.Attributes;
 using MongoDbGenericRepository.Attributes;
 
 namespace DAL.Domain
 {
     [CollectionName("Users")]
-    public class User : MongoIdentityUser<string>
+    public class User : MongoIdentityUser<string>, IUser<string>
     {
         //TODO: users avatar icon?
         public string? FirstName { get; set; }

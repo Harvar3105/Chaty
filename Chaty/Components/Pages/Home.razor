@@ -1,7 +1,23 @@
 ﻿@page "/"
+@using Base.Contracts.Services
+@using DAL.Domain.AddressTables
+@inject IFriendshipService<Friendship> FriendshipService
+@inject IChatService<DAL.Domain.Chat> ChatService
+@inject UserManager<User> UserManager
+@rendermode InteractiveServer
 
 <PageTitle>Home</PageTitle>
 
 <h1>Hello, world!</h1>
 
 Welcome to your new app.
+
+
+@code
+{
+    [CascadingParameter]
+    private Task<AuthenticationState>? AuthenticationState { get; set; }
+    
+    private List<User>? _usersList;
+    private readonly HashSet<string> _usersFriendships = [];
+}

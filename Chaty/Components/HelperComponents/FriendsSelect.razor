@@ -1,30 +1,22 @@
-﻿@page "/Account/Friends"
-@using System.Security.Claims
-@using Base.Contracts.Services
-@using DAL.Domain.AddressTables
-@inject ILogger<Friends> Logger
-@inject UserManager<User> UserManager
-@inject IFriendshipService<Friendship> FriendshipService
-@rendermode InteractiveServer
-<h3>Friends</h3>
+﻿@inject ILogger<FriendsSelect> Logger
 
-@if (_usersList != null)
-{
-<table id="usertable" class="table" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+@* TODO: implement FuzzySearch and filter *@
+
+<table id="friendstable" class="table" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
     <thead>
-        <tr>
-            @if (AuthenticationState!.Result.User.IsInRole("Admin"))
-            {
-            <th>ID</th>
-            <th>Role</th>
-            }
-            <th>Username</th>
-            <th>First name</th>
-            <th>Last name</th>
-            <th>Age</th>
-            <th>Email</th>
-            <th>Interactions</th>
-        </tr>
+    <tr>
+        @if (AuthenticationState!.Result.User.IsInRole("Admin"))
+        {
+        <th>ID</th>
+        <th>Role</th>
+        }
+        <th>Username</th>
+        <th>First name</th>
+        <th>Last name</th>
+        <th>Age</th>
+        <th>Email</th>
+        <th>Interactions</th>
+    </tr>
     </thead>
     <tbody>
     @foreach (var user in _usersList)
@@ -41,10 +33,18 @@
         <td>@user.Age</td>
         <td>@user.Email?.Trim()</td>
         <td>
-            <button class="btn btn-red" @onclick="() => HandleRemoveFriend(user.Id)">
-                <span class="bi bi-person-remove" aria-hidden="true"></span>Remove friend
-            </button>
-            @* TODO: Buttton to SendMessage *@
+            @if (!SelectedFriends.Contains(user))
+            {
+                <button class="btn btn-red" @onclick="() => ToggleSelect(user)">
+                    <span class="bi bi-person-remove" aria-hidden="true"></span>Remove friend
+                </button>
+            }
+            else
+            {
+                <button class="btn btn-green" @onclick="() => ToggleSelect(user)">
+                    <span class="bi bi-person-add" aria-hidden="true"></span>Remove friend
+                </button>
+            }
         </td>
     </tr>
     }
@@ -53,26 +53,21 @@
 }
 else
 {
-    <div class="alert alert-danger">Sorry, but here's no friends. Try find some at "Users" page!</div>
+<div class="alert alert-danger">Sorry, but here's no friends. Try find some at "Users" page!</div>
 }
 
 @code {
     [CascadingParameter]
     private Task<AuthenticationState>? AuthenticationState { get; set; }
-    
-    private List<User>? _usersList;
-    private readonly HashSet<string> _usersFriendships = [];
-    
-    private async void HandleRemoveFriend(string id)
-    {
-        var userId = await GetCurrentUsersId();
-        Logger.LogInformation($"Trying to remove friendship: {userId} + {id}");
 
-        await FriendshipService.RemoveByIdsAsync(userId, id);
-        _usersList!.RemoveAll(u => u.Id.Equals(id));
-        
-        var data = string.Join(", ", _usersFriendships.ToArray());
-        Logger.LogInformation($"Now users {userId} friendships are: {data}");
+    [Parameter] public List<User> SelectedFriends { get; set; } = new();
+    private List<User> _usersList = new();
+    private readonly HashSet<string> _usersFriendships = [];
+
+    private void ToggleSelect(User user)
+    {
+        if (SelectedFriends.Contains(user)) SelectedFriends.Remove(user);
+        else SelectedFriends.Add(user);
         
         StateHasChanged();
     }
