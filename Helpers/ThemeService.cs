@@ -4,57 +4,26 @@ using Microsoft.JSInterop;
 
 namespace Helpers;
 
-public class ThemeService
+public class ThemeService(ILogger<ThemeService> logger, IJSRuntime jsRuntime, ISessionStorageService sessionStorage)
 {
-    private readonly ILogger<ThemeService> _logger;
-    private readonly IJSRuntime _jsRuntime;
-    private readonly ISessionStorageService _sessionStorage;
-    private bool _isDarkTheme;
-
-    public ThemeService(ILogger<ThemeService> logger, IJSRuntime jsRuntime, ISessionStorageService sessionStorage)
+    public async Task ToggleThemeAsync()
     {
-        _logger = logger;
-        _jsRuntime = jsRuntime;
-        _sessionStorage = sessionStorage;
-        _isDarkTheme = false;
-
-        LoadThemeFromSession();
+        var theme = await GetCurrentTheme();
+        theme = theme.Equals("light") ? "dark" : "light";
+        await sessionStorage.SetItemAsync("theme", theme);
+        await ForceUpdateTheme(theme);
     }
 
-    public bool GetThemeState()
+    public async Task ForceUpdateTheme(string? theme = null)
     {
-        return _isDarkTheme;
+        theme ??= await GetCurrentTheme();
+        logger.LogInformation($"Force Update Theme! Current {theme}");
+        await jsRuntime.InvokeVoidAsync("changeTheme", "page", $"page {theme}");
     }
 
-    public async Task ForceUpdateTheme()
+    public async Task<string> GetCurrentTheme()
     {
-        _logger.Log(LogLevel.Information, $"Force Update Theme! Current {GetCurrentTheme()}");
-        await _jsRuntime.InvokeVoidAsync("changeTheme", "page", _isDarkTheme ? "page dark" : "page light");
-    }
-
-    public string GetCurrentTheme()
-    {
-        var theme = _isDarkTheme ? "dark" : "light";
-        // _logger.Log(LogLevel.Information, $"GetCurrentTheme: {theme}");
-        return theme;
-    }
-
-    public async Task SetDarkTheme(bool theme)
-    {
-        _isDarkTheme = theme;
-
-        await _sessionStorage.SetItemAsync("theme", _isDarkTheme ? "dark" : "light");
-
-        await _jsRuntime.InvokeVoidAsync("changeTheme", "page", _isDarkTheme ? "page dark" : "page light");
-    }
-
-    private async void LoadThemeFromSession()
-    {
-        var theme = await _sessionStorage.GetItemAsync<string>("theme");
-        _logger.Log(LogLevel.Information, $"LoadThemeFromSession: {theme}");
-        if (theme != null)
-        {
-            _isDarkTheme = theme.Equals("dark");
-        }
+        var theme = await sessionStorage.GetItemAsync<string>("theme");
+        return theme ?? "light";
     }
 }

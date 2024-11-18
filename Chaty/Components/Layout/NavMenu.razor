@@ -1,4 +1,7 @@
-﻿@rendermode InteractiveServer
+﻿@implements IDisposable
+@inject NavigationManager NavigationManager
+@inject ILogger<NavMenu> Logger
+@rendermode InteractiveServer
 
 <div class="top-row ps-3 navbar navbar-dark">
     <div class="container-fluid">
@@ -44,6 +47,25 @@
 {
     private async void ToggleTheme()
     {
-        await Theme.SetDarkTheme(!Theme.GetThemeState());
+        await Theme.ToggleThemeAsync();
+    }
+    
+    protected override void OnInitialized()
+    {
+        NavigationManager.LocationChanged += LocationChanged;
+        base.OnInitialized();
+    }
+    
+    async void LocationChanged(object sender, LocationChangedEventArgs e)
+    {
+        string navigationMethod = e.IsNavigationIntercepted ? "HTML" : "code";
+        Logger.LogInformation($"Notified of navigation via {navigationMethod} to {e.Location} at " + DateTime.UtcNow);
+        await Task.Delay(50); //TODO: Find way to detect siblings render finish
+        await Theme.ForceUpdateTheme();
+    }
+    
+    void IDisposable.Dispose()
+    {
+        NavigationManager.LocationChanged -= LocationChanged;
     }
 }
