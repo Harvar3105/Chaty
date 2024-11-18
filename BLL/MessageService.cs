@@ -11,4 +11,15 @@ public class MessageService : BaseService<Message>, IMessageService<Message>
     {
     }
     
+    private IMessageRepository<Message> Repository => (IMessageRepository<Message>) _repository;
+
+    public Task<List<Message>> GetMessagesByChatIdAsync(string chatId)
+    {
+        return Repository.GetMessagesByChatIdAsync(chatId);
+    }
+
+    public Task<List<Message>> GetMessagesByChatAndUserId(string chatId, string userId)
+    {
+        return Repository.GetMessagesByChatAndUserId(chatId, userId);
+    }
 }

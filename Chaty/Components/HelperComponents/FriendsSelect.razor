@@ -1,55 +1,57 @@
 ﻿@inject ILogger<FriendsSelect> Logger
+@inject Microsoft.AspNetCore.Identity.UserManager<User> UserManager
 
 @* TODO: implement FuzzySearch and filter *@
 
-<table id="friendstable" class="table" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
-    <thead>
-    <tr>
-        @if (AuthenticationState!.Result.User.IsInRole("Admin"))
-        {
-        <th>ID</th>
-        <th>Role</th>
-        }
-        <th>Username</th>
-        <th>First name</th>
-        <th>Last name</th>
-        <th>Age</th>
-        <th>Email</th>
-        <th>Interactions</th>
-    </tr>
-    </thead>
-    <tbody>
-    @foreach (var user in _usersList)
-    {
-    <tr>
-        @if (AuthenticationState!.Result.User.IsInRole("Admin"))
-        {
-        <td>@user.Id.Trim()</td>
-        <td>@string.Join(", ", user.Roles).Trim()</td>
-        }
-        <td>@user.UserName?.Trim()</td>
-        <td>@user.FirstName?.Trim()</td>
-        <td>@user.LastName?.Trim()</td>
-        <td>@user.Age</td>
-        <td>@user.Email?.Trim()</td>
-        <td>
-            @if (!SelectedFriends.Contains(user))
+@if (_usersList.Any()){
+    <table id="friendstable" class="table" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+        <thead>
+        <tr>
+            @if (AuthenticationState!.Result.User.IsInRole("Admin"))
             {
-                <button class="btn btn-red" @onclick="() => ToggleSelect(user)">
-                    <span class="bi bi-person-remove" aria-hidden="true"></span>Remove friend
-                </button>
+            <th>ID</th>
+            <th>Role</th>
             }
-            else
+            <th>Username</th>
+            <th>First name</th>
+            <th>Last name</th>
+            <th>Age</th>
+            <th>Email</th>
+            <th>Interactions</th>
+        </tr>
+        </thead>
+        <tbody>
+        @foreach (var user in _usersList)
+        {
+        <tr>
+            @if (AuthenticationState!.Result.User.IsInRole("Admin"))
             {
-                <button class="btn btn-green" @onclick="() => ToggleSelect(user)">
-                    <span class="bi bi-person-add" aria-hidden="true"></span>Remove friend
-                </button>
+            <td>@user.Id.Trim()</td>
+            <td>@string.Join(", ", user.Roles).Trim()</td>
             }
-        </td>
-    </tr>
-    }
-    </tbody>
-</table>
+            <td>@user.UserName?.Trim()</td>
+            <td>@user.FirstName?.Trim()</td>
+            <td>@user.LastName?.Trim()</td>
+            <td>@user.Age</td>
+            <td>@user.Email?.Trim()</td>
+            <td>
+                @if (!SelectedFriends.Contains(user))
+                {
+                    <button type="button" class="btn btn-red" @onclick="() => ToggleSelect(user)">
+                        <span class="bi bi-person-add" aria-hidden="true"></span>Add
+                    </button>
+                }
+                else
+                {
+                    <button type="button" class="btn btn-green" @onclick="() => ToggleSelect(user)">
+                        <span class="bi bi-person-remove" aria-hidden="true"></span>Remove
+                    </button>
+                }
+            </td>
+        </tr>
+        }
+        </tbody>
+    </table>
 }
 else
 {
@@ -59,8 +61,10 @@ else
 @code {
     [CascadingParameter]
     private Task<AuthenticationState>? AuthenticationState { get; set; }
-
-    [Parameter] public List<User> SelectedFriends { get; set; } = new();
+    
+    [Parameter] public List<User> SelectedFriends { get; set; } = new List<User>();
+    [Parameter] public EventCallback<List<User>> SelectedFriendsChanged { get; set; }
+    
     private List<User> _usersList = new();
     private readonly HashSet<string> _usersFriendships = [];
 

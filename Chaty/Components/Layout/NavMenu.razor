@@ -1,6 +1,10 @@
-﻿@implements IDisposable
+﻿@using System.Security.Claims
+@using Base.Contracts.Services
+@using DAL.Domain
+@implements IDisposable
 @inject NavigationManager NavigationManager
 @inject ILogger<NavMenu> Logger
+@inject IChatService<Chat> ChatService
 @rendermode InteractiveServer
 
 <div class="top-row ps-3 navbar navbar-dark">
@@ -36,6 +40,19 @@
                 <span class="bi bi-person-nav-menu" aria-hidden="true"></span> Users
             </NavLink>
         </div>
+        
+        @* TODO: Fix not updating after new one creation *@
+        @if (_usersChats is not null)
+        {
+            foreach (var chat in _usersChats)
+            {
+                <div class="nav-item px-3">
+                    <NavLink class="nav-link" href="@($"chat/{chat.Id}")">
+                        <span class="bi bi-person-nav-menu" aria-hidden="true"></span> @chat.ChatName
+                    </NavLink>
+                </div>
+            }
+        }
     </nav>
     <div>
         <button @onclick="ToggleTheme">Toggle Theme</button>
@@ -45,15 +62,40 @@
 
 @code
 {
+    [CascadingParameter]
+    private Task<AuthenticationState>? AuthenticationState { get; set; }
+
+    private List<Chat>? _usersChats;
+    
     private async void ToggleTheme()
     {
         await Theme.ToggleThemeAsync();
     }
+
+    private async Task GetUsersChats()
+    {
+        _usersChats = await ChatService.GetByUserIdAsync(await GetId());
+    }
     
-    protected override void OnInitialized()
+    private async Task<string> GetId()
+    {
+        var user = (await AuthenticationState!).User;
+        var userId = user.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        
+        if (string.IsNullOrEmpty(userId))
+        {
+            Logger.LogWarning($"Cannot find current users id! Identity: {user.Identity!.Name}, {user.Identity.IsAuthenticated}" );
+            throw new Exception($"Cannot find current users id! Identity: {user.Identity!.Name}, {user.Identity.IsAuthenticated}" );
+        }
+
+        return userId;
+    }
+    
+    protected override async Task OnInitializedAsync()
     {
         NavigationManager.LocationChanged += LocationChanged;
-        base.OnInitialized();
+        await GetUsersChats();
+        await base.OnInitializedAsync();
     }
     
     async void LocationChanged(object sender, LocationChangedEventArgs e)

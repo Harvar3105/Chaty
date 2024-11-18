@@ -6,16 +6,17 @@
 
 <h3>Create new chat</h3>
 
-<EditForm Model="@Model" OnValidSubmit="HandleCreation">
+<EditForm Model="@Model" OnValidSubmit="HandleCreation" FormName="CreateChat">
     <DataAnnotationsValidator />
     <ValidationSummary />
 
     <div>
         <label for="chatName">Chat Name</label>
         <InputText id="chatName" @bind-Value="Model.ChatName" class="form-control" />
+        <ValidationMessage For="@(() => Model.ChatName)" />
     </div>
 
-    <FriendsSelect @bind-SelectedUsers="Model.Users" />
+    <FriendsSelect @bind-SelectedFriends="Model.Users"/>
 
     <button type="submit" class="btn btn-primary">Create Chat</button>
 </EditForm>

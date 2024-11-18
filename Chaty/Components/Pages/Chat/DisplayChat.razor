@@ -1,0 +1,72 @@
+﻿@page "/Chat/{ChatId}"
+@using System.Security.Claims
+@inject ILogger<Chat> Logger
+@inject IMessageService<Message> MessageService
+<h3>@_chat?.ChatName</h3>
+
+<div class="chat-container" id="chat-messages" style="background-color: gray">
+    @if (_messages.Any())
+    {
+        foreach (var message in _messages)
+        {
+            <div style="background-color: white">
+                <div style="background-color: #0dcaf0">
+                    @* TODO: fetch users first and display name. If user was banned then show 'Unknown' *@
+                    <text>Sent by: @message.UserId</text>
+                </div>
+                <text>@message.Text</text>
+            </div>
+        }
+    }
+</div>
+
+<EditForm Model="Message" OnSubmit="SendMessage">
+    <InputText @bind-Value="Message.Message" type="text" id="message-input" placeholder="Type your message here!" /> 
+    <button type="submit" >Send</button>
+</EditForm>
+
+@code {
+    [CascadingParameter]
+    private Task<AuthenticationState>? AuthenticationState { get; set; }
+    [Parameter]
+    public string ChatId { get; set; }
+    [SupplyParameterFromForm] public Model Message { get; set; } = new ();
+    
+    private Chat? _chat;
+    private User? _currentUser;
+    private List<Message> _messages = [];
+
+    private void SendMessage()
+    {
+        Logger.LogInformation("Text sent: " + Message.Message);
+        var entity = new Message(null, _currentUser?.Id!, Message.Message, ChatId, null);
+        Message.Message = "";
+        _messages.Add(entity);
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        _chat = await ChatService.GetByIdAsync(ChatId);
+        _messages = await MessageService.GetMessagesByChatIdAsync(ChatId);
+        _currentUser = await GetCurrentUser();
+        await base.OnInitializedAsync();
+    }
+    
+    private async Task<User?> GetCurrentUser()
+    {
+        var user = (await AuthenticationState!).User;
+        var result = await UserManager.GetUserAsync(user);
+
+        if (result is null)
+        {
+            Logger.LogWarning($"Cannot get current user with {user.FindFirst(ClaimTypes.NameIdentifier)?.Value}");
+        }
+        
+        return result;
+    }
+
+    public class Model
+    {
+        public string Message { get; set; }
+    }
+}

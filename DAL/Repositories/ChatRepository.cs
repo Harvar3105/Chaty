@@ -34,4 +34,9 @@ public class ChatRepository : BaseRepository<Chat>, IChatRepository<Chat>
         
         await base.AddAsync(entity);
     }
+
+    public async Task<List<Chat>> GetByUserIdAsync(string userId)
+    {
+        return (await Collection.FindAsync(e => e.AdminId!.Equals(userId) || e.UsersIds!.Contains(userId))).ToList();
+    }
 }
